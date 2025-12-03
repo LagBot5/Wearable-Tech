@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Wearable Control</title>
+  <style>
+    :root{
+      --bg:#6F8FAF;
+      --btn-start:#FFFFFF;
+      --btn-end:#E5D9C7;
+      --accent:#2B3B53;
+      --shadow: rgba(11,22,40,0.2);
+    }
+
+    html,body{height:100%;margin:0;padding:0;font-family: "Segoe UI", Roboto, Arial, sans-serif;background:var(--bg);}
+
+    .page{
+      min-height:100%;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      gap:24px;
+      padding:40px 24px;
+      box-sizing:border-box;
+      color:var(--accent);
+    }
+
+    h1{
+      margin:0 0 16px;
+      font-weight:700;
+      font-size:32px;
+      background: linear-gradient(135deg, #FFFFFF 0%, var(--btn-end) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    h1::after{
+      content: '';
+      display: block;
+      height: 4px;
+      width: 80px;
+      margin: 12px auto 0;
+      background: linear-gradient(90deg, transparent, var(--btn-end), transparent);
+      border-radius: 2px;
+    }
+
+    /* status text */
+    .status{
+      font-size:14px;
+      padding:8px 14px;
+      border-radius:10px;
+      background: rgba(255,255,255,0.12);
+      backdrop-filter: blur(4px);
+      color:var(--accent);
+      min-width:260px;
+      text-align:center;
+      box-shadow: 0 4px 12px rgba(11,22,40,0.08);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap:18px;
+      width:100%;
+      max-width:720px;
+      align-items:center;
+      justify-items:center;
+    }
+
+    form{margin:0} /* keep forms if you submit to actions */
+
+    .btn{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      height:120px;
+      width:120px;
+      border-radius:20px;
+      border:0;
+      padding:8px 12px;
+      background: linear-gradient(135deg, var(--btn-start) 0%, var(--btn-end) 100%);
+      color:var(--accent);
+      font-weight:700;
+      font-size:16px;
+      box-shadow: 0 8px 20px var(--shadow), inset 0 -3px rgba(0,0,0,0.04);
+      cursor:pointer;
+      transition: transform .14s cubic-bezier(.2,.8,.2,1), box-shadow .14s ease, filter .14s;
+      user-select:none;
+    }
+
+    .btn:hover{ transform: translateY(-6px); box-shadow: 0 18px 36px rgba(11,22,40,0.25); filter:brightness(1.02) }
+
+    .btn:active{ transform: translateY(-2px) scale(.995); box-shadow: 0 8px 18px rgba(11,22,40,0.18) }
+
+    /* optional small labels under buttons */
+    .label{font-size:12px;opacity:0.9;margin-top:6px}
+
+    /* responsive tweaks */
+    @media (max-width:420px){
+      .btn{height:88px;width:88px;font-size:14px;border-radius:14px}
+      .grid{gap:12px}
+      h1{font-size:24px}
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>Wearable Control</h1>
+
+    <!-- status area that updates when a button is pressed -->
+    <div id="status" class="status" role="status" aria-live="polite">No button pressed yet</div>
+
+    <div class="grid">
+      <button class="btn" type="button">Music Mode</button>
+      <button class="btn" type="button">Battle Mode</button>
+      <button class="btn" type="button">Gesture Mode</button>
+      <button class="btn" type="button">Navigation Mode</button>
+      <button class="btn" type="button">Button5</button>
+    </div>
+  </div>
+
+  <script>
+    // POST button presses to the Pico HTTP server at /press
+    (function(){
+      const statusEl = document.getElementById('status');
+      const picoUrl = window.location.origin; // use current origin or set to 'http://<pico-ip>'
+      
+      async function postPress(label) {
+        try {
+          const resp = await fetch(picoUrl + '/press', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ button: label })
+          });
+          const data = await resp.json();
+          if (resp.ok && data.status === 'ok') {
+            statusEl.textContent = `Pressed: ${data.pressed} (Mode: ${data.mode})`;
+          } else {
+            statusEl.textContent = `Error: ${data.message || 'server error'}`;
+          }
+        } catch (err) {
+          statusEl.textContent = 'Network error';
+          console.error(err);
+        }
+      }
+      
+      document.querySelectorAll('.btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          const label = btn.textContent.trim() || btn.getAttribute('aria-label') || 'Unnamed button';
+          statusEl.textContent = `Pressed: ${label}...`;
+          // small visual feedback
+          btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration: 180, easing: 'ease-out' });
+          await postPress(label);
+        });
+      });
+
+      // optional: reset to default after 3.5s
+      let resetTimer;
+      const resetText = () => {
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => { statusEl.textContent = 'No button pressed yet'; }, 3500);
+      };
+      document.querySelectorAll('.btn').forEach(b => b.addEventListener('click', resetText));
+    })();
+  </script>
+</body>
+</html>
