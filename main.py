@@ -1,5 +1,4 @@
 # http://192.168.99.108
-
 from imu import MPU6050
 from utime import sleep, ticks_ms
 from machine import Pin, I2C, PWM
@@ -8,17 +7,12 @@ import network
 import socket
 import urequests as requests
 
-try:
-    import ujson as json
-except Exception:
-    import json
-
 ssid = "CYBERTRON"
 pw = "Mr.LamYo"
 
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
-wlan.connect(ssid, pw)
+wlan.connect(ssid,pw)
 
 while wlan.isconnected() == False:
     print ("Connecting... ")
@@ -27,10 +21,8 @@ print("You have connected!")
 
 wlanInfo = wlan.ifconfig()
 print("My Pico's IP adress is ... ", wlanInfo[0])
+#My pico address 192.168.99.140
 
-# HTTP server for web UI
-web_sock = None
-current_mode = 'idle'  # track current mode from web button presses
 
 button = Pin(16, Pin.IN, Pin.PULL_DOWN)
 StateLed = Pin(17, Pin.OUT)
@@ -68,98 +60,6 @@ def playtone(frequency):
 def bequiet():
     speaker.duty_u16(0) # turn off the speaker PWM
 
-def start_http_server():
-    """Start a non-blocking HTTP server on port 80."""
-    global web_sock
-    try:
-        addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
-        s = socket.socket()
-        try:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except Exception:
-            pass
-        s.bind(addr)
-        s.listen(1)
-        s.setblocking(False)
-        web_sock = s
-        print('[HTTP] Server listening on', addr)
-    except Exception as e:
-        print('[HTTP] Failed to start:', e)
-        web_sock = None
-
-def handle_http_request(conn, addr):
-    """Handle a simple HTTP request: GET / or POST /press."""
-    global current_mode
-    try:
-        conn.settimeout(0.5)
-        req = b''
-        try:
-            req = conn.recv(2048)
-        except Exception:
-            pass
-        if not req:
-            conn.close()
-            return
-        try:
-            text = req.decode('utf-8')
-        except Exception:
-            text = str(req)
-        
-        first_line = text.split('\r\n', 1)[0]
-        parts = first_line.split(' ')
-        if len(parts) < 2:
-            conn.close()
-            return
-        method, path = parts[0], parts[1]
-        
-        # GET / returns simple status
-        if method == 'GET' and path == '/':
-            body = f'<h1>Pico Wearable Server</h1><p>Mode: {current_mode}</p>'
-            resp = f'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {len(body)}\r\n\r\n{body}'
-            conn.send(resp.encode('utf-8'))
-            conn.close()
-            return
-        
-        # POST /press - handle button presses from the web UI
-        if method == 'POST' and path == '/press':
-            split_at = text.split('\r\n\r\n', 1)
-            body_text = split_at[1] if len(split_at) > 1 else ''
-            label = None
-            try:
-                data = json.loads(body_text)
-                label = data.get('button')
-            except Exception:
-                pass
-            
-            if not label:
-                resp = 'HTTP/1.0 400 Bad Request\r\nContent-Type: application/json\r\nContent-Length: 28\r\n\r\n{"status":"error","message":"no button"}'
-                conn.send(resp.encode('utf-8'))
-                conn.close()
-                return
-            
-            # Handle the button press
-            print(f'[HTTP] Button pressed: {label}')
-            current_mode = label.lower().strip()
-            
-            # Respond with OK
-            result = json.dumps({'status': 'ok', 'pressed': label, 'mode': current_mode})
-            resp = f'HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: {len(result)}\r\n\r\n{result}'
-            conn.send(resp.encode('utf-8'))
-            conn.close()
-            return
-        
-        # Default 404
-        body = '<h1>Not Found</h1>'
-        resp = f'HTTP/1.0 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: {len(body)}\r\n\r\n{body}'
-        conn.send(resp.encode('utf-8'))
-        conn.close()
-    except Exception as e:
-        try:
-            conn.close()
-        except Exception:
-            pass
-        print('[HTTP] Error:', e)
-
 #Finger States
 Finger1x = 0
 Finger1y = 0
@@ -178,19 +78,8 @@ I2C2 =  I2C(1, sda=Pin(2), scl=Pin(3))
 imu1 = MPU6050(I2C1)
 imu2 = MPU6050(I2C2)
 
-# Start the HTTP server
-start_http_server()
-
 while True:
     note_playing = False
-    
-    # Check for incoming HTTP connections (non-blocking)
-    if web_sock is not None:
-        try:
-            conn, addr = web_sock.accept()
-            handle_http_request(conn, addr)
-        except Exception:
-            pass
     
     # reading values
     gyroscope1 = imu1.gyro
