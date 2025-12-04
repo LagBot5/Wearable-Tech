@@ -50,8 +50,6 @@ def printData():
     print("2 temp =",imu2.temperature)
     sleep(1)
 
-
-
 while True:
     note_playing = False
 
