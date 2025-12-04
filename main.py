@@ -68,6 +68,7 @@ while True:
             mode += 1
             if mode >= 4:
                 mode = 0
+            print(mode)
     elif modeCycleButton.value() == 0:
         turnedOffA = True
 
