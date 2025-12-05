@@ -179,6 +179,7 @@ imu2 = MPU6050(I2C2)
 # Start the HTTP server
 start_http_server()
 
+print("waiting for requests...")
 while True:
     note_playing = False
     
