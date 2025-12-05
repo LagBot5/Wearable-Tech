@@ -6,7 +6,7 @@ import FingerLogic, Tones
 button = Pin(16, Pin.IN, Pin.PULL_DOWN)
 StateLed = Pin(17, Pin.OUT)
 state = 0
-turnedOff = True
+turnedOffB = True
 
 modeCycleButton = Pin(15, Pin.IN, Pin.PULL_DOWN)
 turnedOffA = True
@@ -73,8 +73,8 @@ while True:
 
     # Debounced power button
     if button.value() == 1:
-        if turnedOff == True:
-            turnedOff = False
+        if turnedOffB == True:
+            turnedOffB = False
             state += 1
             if state >= 2:
                 print("Turn Off!")
@@ -84,7 +84,7 @@ while True:
                 print("Turn On!")
                 StateLed.value(1)
     elif button.value() == 0:
-        turnedOff = True
+        turnedOffB = True
 
     #If power on, do this
     if state == 1:
