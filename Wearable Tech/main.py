@@ -110,13 +110,23 @@ def handle_http_request(conn, addr):
             return
         method, path = parts[0], parts[1]
         
-        # GET / returns simple status
-        if method == 'GET' and path == '/':
-            body = f'<h1>Pico Wearable Server</h1><p>Mode: {current_mode}</p>'
-            resp = f'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {len(body)}\r\n\r\n{body}'
-            conn.send(resp.encode('utf-8'))
-            conn.close()
-            return
+        # GET / returns the controller UI if present on the device
+        if method == 'GET' and (path == '/' or path == '/Controller.html'):
+            try:
+                # Attempt to serve `Controller.html` from the local filesystem
+                with open('Controller.html', 'r') as f:
+                    body = f.read()
+                resp = 'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}'.format(len(body), body)
+                conn.send(resp.encode('utf-8'))
+                conn.close()
+                return
+            except Exception:
+                # Fallback to a small status page if file not available
+                body = f'<h1>Pico Wearable Server</h1><p>Mode: {current_mode}</p>'
+                resp = f'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {len(body)}\r\n\r\n{body}'
+                conn.send(resp.encode('utf-8'))
+                conn.close()
+                return
         
         # POST /press - handle button presses from the web UI
         if method == 'POST' and path == '/press':
