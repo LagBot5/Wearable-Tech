@@ -16,6 +16,7 @@ Finger2z = 0
 music = 0
 combat = 1
 gestures = 2
+navigateApp = 3
 
 def checkFingers(gyroscope1, accel1, gyroscope2, accel2, mode):
     global Finger1x, Finger1y, Finger2x, Finger2y
@@ -159,3 +160,28 @@ def doAction(action, mode):
             print("gesture 2y down")
         elif action == "finger2y up":
             print("gesture 2y up")
+    
+    elif mode == navigateApp:
+        #Finger1x
+        if action == "finger1x down":
+            print("navigateApp 1x down")
+        elif action == "finger1x up":
+            print("navigateApp 1x up")
+
+        #Finger1y
+        elif action == "finger1y down":
+            print("navigateApp 1y down")
+        elif action == "finger1y up":
+            print("navigateApp 1y up")
+
+        #Finger2x
+        elif action == "finger2x down":
+            print("navigateApp 2x down")
+        elif action == "finger2x up":
+            print("navigateApp 2x up")
+
+        #Finger2y
+        elif action == "finger2y down":
+            print("navigateApp 2y down")
+        elif action == "finger2y up":
+            print("navigateApp 2y up")
