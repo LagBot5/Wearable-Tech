@@ -29,6 +29,7 @@ imu2 = MPU6050(I2C2)
 music = 0
 combat = 1
 gestures = 2
+navigateApp = 3
 mode = 0
 
 def printData():
