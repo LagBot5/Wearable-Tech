@@ -94,4 +94,4 @@ while True:
         #Stops Note Playing
         if not note_playing:  # If no button is pressed
             Tones.bequiet()
-    sleep(0.1)
+    sleep(0.07)
