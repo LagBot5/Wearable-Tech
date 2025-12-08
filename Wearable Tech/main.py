@@ -180,22 +180,38 @@ def handle_http_request(conn, addr):
         # GET /sensors - return JSON with gyro and accel values for both IMUs
         if method == 'GET' and path == '/sensors':
             try:
-                # Read the current sensor vectors (this calls update())
-                g1x, g1y, g1z = imu1.gyro.xyz
-                a1x, a1y, a1z = imu1.accel.xyz
-                g2x, g2y, g2z = imu2.gyro.xyz
-                a2x, a2y, a2z = imu2.accel.xyz
+                # Read raw sensor integers for both IMUs in quick succession
+                # Use get_gyro_irq / get_accel_irq to fetch raw integer registers
+                imu1.get_gyro_irq()
+                imu1.get_accel_irq()
+                imu2.get_gyro_irq()
+                imu2.get_accel_irq()
+
+                # Raw integer vectors
+                g1_iv = imu1.gyro.ixyz
+                a1_iv = imu1.accel.ixyz
+                g2_iv = imu2.gyro.ixyz
+                a2_iv = imu2.accel.ixyz
+
+                # Scaling factors (match those used in imu.py)
+                gyro_scales = (131.0, 65.5, 32.8, 16.4)
+                accel_scales = (16384.0, 8192.0, 4096.0, 2048.0)
+
+                # Read configured ranges (may perform small I2C reads)
+                g1_range = imu1.gyro_range
+                a1_range = imu1.accel_range
+                g2_range = imu2.gyro_range
+                a2_range = imu2.accel_range
+
+                # Compute scaled float values
+                g1 = {'x': g1_iv[0] / gyro_scales[g1_range], 'y': g1_iv[1] / gyro_scales[g1_range], 'z': g1_iv[2] / gyro_scales[g1_range]}
+                a1 = {'x': a1_iv[0] / accel_scales[a1_range], 'y': a1_iv[1] / accel_scales[a1_range], 'z': a1_iv[2] / accel_scales[a1_range]}
+                g2 = {'x': g2_iv[0] / gyro_scales[g2_range], 'y': g2_iv[1] / gyro_scales[g2_range], 'z': g2_iv[2] / gyro_scales[g2_range]}
+                a2 = {'x': a2_iv[0] / accel_scales[a2_range], 'y': a2_iv[1] / accel_scales[a2_range], 'z': a2_iv[2] / accel_scales[a2_range]}
 
                 payload = {
-                    'imu1': {
-                        'gyro': {'x': g1x, 'y': g1y, 'z': g1z},
-                        'accel': {'x': a1x, 'y': a1y, 'z': a1z}
-                    },
-                    'imu2': {
-                        'gyro': {'x': g2x, 'y': g2y, 'z': g2z},
-                        'accel': {'x': a2x, 'y': a2y, 'z': a2z}
-                    }
-                ,
+                    'imu1': {'gyro': g1, 'accel': a1},
+                    'imu2': {'gyro': g2, 'accel': a2},
                     'mode': current_mode
                 }
                 body = json.dumps(payload)
