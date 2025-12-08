@@ -195,6 +195,8 @@ def handle_http_request(conn, addr):
                         'gyro': {'x': g2x, 'y': g2y, 'z': g2z},
                         'accel': {'x': a2x, 'y': a2y, 'z': a2z}
                     }
+                ,
+                    'mode': current_mode
                 }
                 body = json.dumps(payload)
                 resp = 'HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}'.format(len(body), body)
