@@ -176,6 +176,46 @@ def handle_http_request(conn, addr):
             conn.send(resp.encode('utf-8'))
             conn.close()
             return
+
+        # GET /sensors - return JSON with gyro and accel values for both IMUs
+        if method == 'GET' and path == '/sensors':
+            try:
+                # Read the current sensor vectors (this calls update())
+                g1x, g1y, g1z = imu1.gyro.xyz
+                a1x, a1y, a1z = imu1.accel.xyz
+                g2x, g2y, g2z = imu2.gyro.xyz
+                a2x, a2y, a2z = imu2.accel.xyz
+
+                payload = {
+                    'imu1': {
+                        'gyro': {'x': g1x, 'y': g1y, 'z': g1z},
+                        'accel': {'x': a1x, 'y': a1y, 'z': a1z}
+                    },
+                    'imu2': {
+                        'gyro': {'x': g2x, 'y': g2y, 'z': g2z},
+                        'accel': {'x': a2x, 'y': a2y, 'z': a2z}
+                    }
+                }
+                body = json.dumps(payload)
+                resp = 'HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}'.format(len(body), body)
+                conn.send(resp.encode('utf-8'))
+                conn.close()
+                return
+            except Exception as e:
+                try:
+                    err = json.dumps({'error': str(e)})
+                except Exception:
+                    err = '{"error":"read failed"}'
+                resp = 'HTTP/1.0 500 Internal Server Error\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}'.format(len(err), err)
+                try:
+                    conn.send(resp.encode('utf-8'))
+                except Exception:
+                    pass
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+                return
         
         # Default 404
         body = '<h1>Not Found</h1>'
