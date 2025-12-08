@@ -119,6 +119,24 @@
       <button class="btn" type="button">Gesture Mode</button>
       <button class="btn" type="button">Navigation Mode</button>
     </div>
+
+    <!-- Sensor displays -->
+    <div style="width:100%;max-width:720px;margin-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="status" id="imu1-panel">
+        <strong>IMU 1</strong>
+        <div id="imu1-gyro">Gyro: x=0 y=0 z=0</div>
+        <canvas id="imu1-gyro-c" width="300" height="60" style="width:100%;height:30px"></canvas>
+        <div id="imu1-accel">Accel: x=0 y=0 z=0</div>
+        <canvas id="imu1-accel-c" width="300" height="60" style="width:100%;height:30px"></canvas>
+      </div>
+      <div class="status" id="imu2-panel">
+        <strong>IMU 2</strong>
+        <div id="imu2-gyro">Gyro: x=0 y=0 z=0</div>
+        <canvas id="imu2-gyro-c" width="300" height="60" style="width:100%;height:30px"></canvas>
+        <div id="imu2-accel">Accel: x=0 y=0 z=0</div>
+        <canvas id="imu2-accel-c" width="300" height="60" style="width:100%;height:30px"></canvas>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -156,16 +174,63 @@
           await postPress(label);
         });
       });
+      // Sensor polling and UI
+      function drawBars(canvas, values, scale) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width; const h = canvas.height;
+        ctx.clearRect(0,0,w,h);
+        const labels = ['x','y','z'];
+        const barH = Math.floor(h / 3);
+        for (let i=0;i<3;i++){
+          const v = values[i];
+          const norm = Math.max(-scale, Math.min(scale, v)) / scale; // -1..1
+          const mid = w/2;
+          const len = Math.abs(norm) * (w/2 - 6);
+          const y = i*barH + 4;
+          // background
+          ctx.fillStyle = '#eee';
+          ctx.fillRect(0, y, w, barH-6);
+          // center line
+          ctx.fillStyle = '#bbb';
+          ctx.fillRect(mid-1, y, 2, barH-6);
+          // value bar
+          ctx.fillStyle = norm >= 0 ? '#2b8aef' : '#ef6b6b';
+          if (norm >= 0) ctx.fillRect(mid, y, len, barH-6); else ctx.fillRect(mid-len, y, len, barH-6);
+          // label and value
+          ctx.fillStyle = '#123';
+          ctx.font = '10px sans-serif';
+          ctx.fillText(labels[i]+': '+v.toFixed(2), 6, y + (barH/2)+3);
+        }
+      }
 
-      // optional: reset to default after 3.5s
-      //let resetTimer;
-      //const resetText = () => {
-        //clearTimeout(resetTimer);
-        //resetTimer = setTimeout(() => { statusEl.textContent = 'No button pressed yet'; }, 3500);
-      //};
-      //document.querySelectorAll('.btn').forEach(b => b.addEventListener('click', resetText));
+      async function fetchSensors() {
+        try {
+          const resp = await fetch('/sensors');
+          if (!resp.ok) throw new Error('network');
+          const data = await resp.json();
+          // IMU1
+          const g1 = data.imu1.gyro; const a1 = data.imu1.accel;
+          document.getElementById('imu1-gyro').textContent = `Gyro: x=${g1.x.toFixed(2)} y=${g1.y.toFixed(2)} z=${g1.z.toFixed(2)}`;
+          document.getElementById('imu1-accel').textContent = `Accel: x=${a1.x.toFixed(2)} y=${a1.y.toFixed(2)} z=${a1.z.toFixed(2)}`;
+          drawBars(document.getElementById('imu1-gyro-c'), [g1.x, g1.y, g1.z], 200);
+          drawBars(document.getElementById('imu1-accel-c'), [a1.x, a1.y, a1.z], 4);
+          // IMU2
+          const g2 = data.imu2.gyro; const a2 = data.imu2.accel;
+          document.getElementById('imu2-gyro').textContent = `Gyro: x=${g2.x.toFixed(2)} y=${g2.y.toFixed(2)} z=${g2.z.toFixed(2)}`;
+          document.getElementById('imu2-accel').textContent = `Accel: x=${a2.x.toFixed(2)} y=${a2.y.toFixed(2)} z=${a2.z.toFixed(2)}`;
+          drawBars(document.getElementById('imu2-gyro-c'), [g2.x, g2.y, g2.z], 200);
+          drawBars(document.getElementById('imu2-accel-c'), [a2.x, a2.y, a2.z], 4);
+        } catch (e) {
+          // ignore network errors, show brief notice
+          //console.warn('sensors', e);
+        }
+      }
+
+      // Start polling sensors at ~5Hz
+      setInterval(fetchSensors, 200);
+      // fetch once immediately
+      fetchSensors();
     })();
   </script>
 </body>
 </html>
-
