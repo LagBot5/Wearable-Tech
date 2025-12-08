@@ -118,7 +118,6 @@
       <button class="btn" type="button">Battle Mode</button>
       <button class="btn" type="button">Gesture Mode</button>
       <button class="btn" type="button">Navigation Mode</button>
-      <button class="btn" type="button">Button5</button>
     </div>
   </div>
 
@@ -137,7 +136,7 @@
           });
           const data = await resp.json();
           if (resp.ok && data.status === 'ok') {
-            statusEl.textContent = `Pressed: ${data.pressed} (Mode: ${data.mode})`;
+            statusEl.textContent = `Pressed: ${data.pressed} (Mode: ${data.Mode})`;
           } else {
             statusEl.textContent = `Error: ${data.message || 'server error'}`;
           }
@@ -159,13 +158,14 @@
       });
 
       // optional: reset to default after 3.5s
-      let resetTimer;
-      const resetText = () => {
-        clearTimeout(resetTimer);
-        resetTimer = setTimeout(() => { statusEl.textContent = 'No button pressed yet'; }, 3500);
-      };
-      document.querySelectorAll('.btn').forEach(b => b.addEventListener('click', resetText));
+      //let resetTimer;
+      //const resetText = () => {
+        //clearTimeout(resetTimer);
+        //resetTimer = setTimeout(() => { statusEl.textContent = 'No button pressed yet'; }, 3500);
+      //};
+      //document.querySelectorAll('.btn').forEach(b => b.addEventListener('click', resetText));
     })();
   </script>
 </body>
 </html>
+
