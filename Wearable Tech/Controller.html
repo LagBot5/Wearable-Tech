@@ -154,7 +154,7 @@
           });
           const data = await resp.json();
           if (resp.ok && data.status === 'ok') {
-            statusEl.textContent = `Pressed: ${data.pressed} (Mode: ${data.Mode})`;
+            statusEl.textContent = `Pressed: ${data.pressed} (Mode: ${data.mode})`;
           } else {
             statusEl.textContent = `Error: ${data.message || 'server error'}`;
           }
@@ -208,6 +208,13 @@
           const resp = await fetch('/sensors');
           if (!resp.ok) throw new Error('network');
           const data = await resp.json();
+          // update current mode display if present
+          if (data.mode !== undefined) {
+            // only update the main status if it doesn't currently show a recent press
+            if (!statusEl.textContent.startsWith('Pressed:')) {
+              statusEl.textContent = `Mode: ${data.mode}`;
+            }
+          }
           // IMU1
           const g1 = data.imu1.gyro; const a1 = data.imu1.accel;
           document.getElementById('imu1-gyro').textContent = `Gyro: x=${g1.x.toFixed(2)} y=${g1.y.toFixed(2)} z=${g1.z.toFixed(2)}`;
