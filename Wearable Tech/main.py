@@ -11,7 +11,7 @@ try:
 except Exception:
     import json
 
-ssid = "CYBERTRON"
+ssid = "THIRDEARTH"
 pw = "Mr.LamYo"
 
 wlan = network.WLAN(network.STA_IF)
@@ -26,26 +26,7 @@ print("You have connected!")
 wlanInfo = wlan.ifconfig()
 print("My Pico's IP adress is ... ", wlanInfo[0])
 
-# Also bring up a simple Access Point so other devices can connect directly to the Pico
-# This creates an AP named '<ssid>_PICO' with the same password (useful if you want devices
-# to connect directly to the Pico without an existing router).
-try:
-    ap = network.WLAN(network.AP_IF)
-    ap.active(True)
-    ap_ssid = ssid + '_PICO'
-    ap_pwd = pw
-    try:
-        ap.config(essid=ap_ssid, password=ap_pwd)
-    except Exception:
-        # Some firmware builds accept different args; try a minimal config call
-        try:
-            ap.config(essid=ap_ssid)
-        except Exception:
-            pass
-    ap_if = ap.ifconfig()
-    print('Pico AP started: SSID="{}" IP={}'.format(ap_ssid, ap_if[0]))
-except Exception as e:
-    print('Failed to start Pico AP:', e)
+# NOTE: Pico AP disabled — device will only attempt STA (router) connection.
 
 # HTTP server for web UI
 web_sock = None
@@ -314,14 +295,15 @@ while True:
 
         #Rotation X
         if gyroscope1.x < -50 and Finger1x == 0:
-            print("Finger1 down")
+            print("Finger1 down (Mode: {})", format(current_mode))
             Finger1x = 1
 
-            #Note C
-            print("(C)")
-            sleep(1)
-            playtone(tones['C4'])
-            note_playing = True
+            # Mode-specific action: Music Mode plays notes
+            if current_mode == 'music mode':
+                print("(C)")
+                sleep(1)
+                playtone(tones['C4'])
+                note_playing = True
             
         if gyroscope1.x > 50 and Finger1x == 1:
             print("Finger1 up")
