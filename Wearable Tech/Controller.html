@@ -107,7 +107,8 @@
   </style>
 </head>
 <body>
-  <div class="page">
+  <!-- Main Control Page -->
+  <div id="main-page" class="page">
     <h1>Wearable Control</h1>
 
     <!-- Mode and connection status -->
@@ -117,35 +118,183 @@
     <div id="status" class="status" role="status" aria-live="polite">No button pressed yet</div>
 
     <div class="grid">
-      <button class="btn" type="button">Music Mode</button>
+      <button class="btn" type="button" id="music-btn">Music Mode</button>
       <button class="btn" type="button">Battle Mode</button>
       <button class="btn" type="button">Gesture Mode</button>
       <button class="btn" type="button">Navigation Mode</button>
     </div>
 
-    <!-- Gyroscope readouts (lightweight) -->
+    <!-- Sensor display with both gyroscopes -->
     <div style="width:100%;max-width:720px;margin-top:18px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="status">
-          <strong>Finger 1</strong>
-          <div style="font-family:monospace;margin-top:8px;">Gyro X: <span id="f1-gyro-x">0.0</span> &nbsp; Y: <span id="f1-gyro-y">0.0</span> &nbsp; Z: <span id="f1-gyro-z">0.0</span></div>
-          <div style="font-family:monospace;margin-top:6px;">Accel X: <span id="f1-accel-x">0.0</span> &nbsp; Y: <span id="f1-accel-y">0.0</span> &nbsp; Z: <span id="f1-accel-z">0.0</span></div>
+        <!-- Gyroscope 1 -->
+        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
+          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
+            <div><strong>Acceleration (m/s²):</strong></div>
+            <div style="margin-left:8px;">X: <span id="accel1-x">0.00</span></div>
+            <div style="margin-left:8px;">Y: <span id="accel1-y">0.00</span></div>
+            <div style="margin-left:8px;">Z: <span id="accel1-z">0.00</span></div>
+            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
+            <div style="margin-left:8px;">X: <span id="gyro1-x">0.00</span>°</div>
+            <div style="margin-left:8px;">Y: <span id="gyro1-y">0.00</span>°</div>
+            <div style="margin-left:8px;">Z: <span id="gyro1-z">0.00</span>°</div>
+          </div>
         </div>
-        <div class="status">
-          <strong>Finger 2</strong>
-          <div style="font-family:monospace;margin-top:8px;">Gyro X: <span id="f2-gyro-x">0.0</span> &nbsp; Y: <span id="f2-gyro-y">0.0</span> &nbsp; Z: <span id="f2-gyro-z">0.0</span></div>
-          <div style="font-family:monospace;margin-top:6px;">Accel X: <span id="f2-accel-x">0.0</span> &nbsp; Y: <span id="f2-accel-y">0.0</span> &nbsp; Z: <span id="f2-accel-z">0.0</span></div>
+        <!-- Gyroscope 2 -->
+        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
+          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
+            <div><strong>Acceleration (m/s²):</strong></div>
+            <div style="margin-left:8px;">X: <span id="accel2-x">0.00</span></div>
+            <div style="margin-left:8px;">Y: <span id="accel2-y">0.00</span></div>
+            <div style="margin-left:8px;">Z: <span id="accel2-z">0.00</span></div>
+            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
+            <div style="margin-left:8px;">X: <span id="gyro2-x">0.00</span>°</div>
+            <div style="margin-left:8px;">Y: <span id="gyro2-y">0.00</span>°</div>
+            <div style="margin-left:8px;">Z: <span id="gyro2-z">0.00</span>°</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Music Mode Page -->
+  <div id="music-page" class="page" style="display:none;">
+    <button class="btn" type="button" id="back-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
+    
+    <h1 style="margin-top:40px;">🎵 Music Mode</h1>
+
+    <div id="song-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
+      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Now Playing</div>
+      <div id="current-song" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Waiting for song...</div>
+      <div style="font-size:12px;opacity:0.7;">Interact with your finger to change songs</div>
+    </div>
+
+    <!-- Sensor display with both gyroscopes -->
+    <div style="width:100%;max-width:720px;margin-top:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <!-- Gyroscope 1 -->
+        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
+          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
+            <div><strong>Acceleration (m/s²):</strong></div>
+            <div style="margin-left:8px;">X: <span id="music-accel1-x">0.00</span></div>
+            <div style="margin-left:8px;">Y: <span id="music-accel1-y">0.00</span></div>
+            <div style="margin-left:8px;">Z: <span id="music-accel1-z">0.00</span></div>
+            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
+            <div style="margin-left:8px;">X: <span id="music-gyro1-x">0.00</span>°</div>
+            <div style="margin-left:8px;">Y: <span id="music-gyro1-y">0.00</span>°</div>
+            <div style="margin-left:8px;">Z: <span id="music-gyro1-z">0.00</span>°</div>
+          </div>
+        </div>
+        <!-- Gyroscope 2 -->
+        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
+          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
+            <div><strong>Acceleration (m/s²):</strong></div>
+            <div style="margin-left:8px;">X: <span id="music-accel2-x">0.00</span></div>
+            <div style="margin-left:8px;">Y: <span id="music-accel2-y">0.00</span></div>
+            <div style="margin-left:8px;">Z: <span id="music-accel2-z">0.00</span></div>
+            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
+            <div style="margin-left:8px;">X: <span id="music-gyro2-x">0.00</span>°</div>
+            <div style="margin-left:8px;">Y: <span id="music-gyro2-y">0.00</span>°</div>
+            <div style="margin-left:8px;">Z: <span id="music-gyro2-z">0.00</span>°</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example songs playlist -->
+    <div id="playlist" style="width:100%;max-width:600px;margin-top:20px;">
+      <h2 style="text-align:center;margin-bottom:15px;font-size:18px;">📜 Playlist Examples</h2>
+      <div style="display:grid;gap:10px;">
+        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
+          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">1. Moonlight Sonata</div>
+          <div style="font-size:12px;opacity:0.8;">Classical - Ludwig van Beethoven</div>
+          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 5:28 | Tempo: Adagio sostenuto</div>
+        </div>
+        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
+          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">2. Bohemian Rhapsody</div>
+          <div style="font-size:12px;opacity:0.8;">Rock - Queen</div>
+          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 5:55 | Tempo: Rock Ballad</div>
+        </div>
+        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
+          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">3. Levitating</div>
+          <div style="font-size:12px;opacity:0.8;">Pop - Dua Lipa</div>
+          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 3:23 | Tempo: 103 BPM</div>
+        </div>
+        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
+          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">4. Blinding Lights</div>
+          <div style="font-size:12px;opacity:0.8;">Synthwave - The Weeknd</div>
+          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 3:20 | Tempo: 87 BPM</div>
+        </div>
+        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
+          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">5. Wake Me Up</div>
+          <div style="font-size:12px;opacity:0.8;">EDM - Avicii</div>
+          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 4:09 | Tempo: 120 BPM</div>
         </div>
       </div>
     </div>
   </div>
 
   <script>
+    // Music Mode page management
+    const mainPage = document.getElementById('main-page');
+    const musicPage = document.getElementById('music-page');
+    const musicBtn = document.getElementById('music-btn');
+    const backBtn = document.getElementById('back-btn');
+    const currentSongEl = document.getElementById('current-song');
+
+    // Sample songs list
+    const songs = [
+      '🎹 Moonlight Sonata - Beethoven',
+      '🎸 Bohemian Rhapsody - Queen',
+      '✨ Levitating - Dua Lipa',
+      '💫 Blinding Lights - The Weeknd',
+      '🎧 Wake Me Up - Avicii'
+    ];
+    let currentSongIndex = 0;
+
+    // Show Music Mode page
+    musicBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      mainPage.style.display = 'none';
+      musicPage.style.display = 'flex';
+      currentSongIndex = 0;
+      updateSongDisplay();
+    });
+
+    // Back button to return to main page
+    backBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      musicPage.style.display = 'none';
+      mainPage.style.display = 'flex';
+    });
+
+    function updateSongDisplay() {
+      currentSongEl.textContent = songs[currentSongIndex];
+    }
+
+    function nextSong() {
+      currentSongIndex = (currentSongIndex + 1) % songs.length;
+      updateSongDisplay();
+    }
+
+    function prevSong() {
+      currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
+      updateSongDisplay();
+    }
+
+    // Expose functions for gyroscope control (optional)
+    window.musicNextSong = nextSong;
+    window.musicPrevSong = prevSong;
+
     // POST button presses to the Pico HTTP server at /press
     (function(){
       const statusEl = document.getElementById('status');
       const picoUrl = window.location.origin; // use current origin or set to 'http://<pico-ip>'
-
+      
       async function postPress(label) {
         try {
           const resp = await fetch(picoUrl + '/press', {
@@ -156,22 +305,15 @@
           const data = await resp.json();
           if (resp.ok && data.status === 'ok') {
             statusEl.textContent = `Pressed: ${data.pressed} (Mode: ${data.mode})`;
-            // update mode display and connection status
-            const modeEl = document.getElementById('mode-text');
-            if (modeEl) modeEl.textContent = data.mode;
-            const connEl = document.getElementById('connection-status');
-            if (connEl) { connEl.textContent = '🟢 Connected'; connEl.style.color = '#2b8aef'; }
           } else {
             statusEl.textContent = `Error: ${data.message || 'server error'}`;
           }
         } catch (err) {
           statusEl.textContent = 'Network error';
-          const connEl = document.getElementById('connection-status');
-          if (connEl) { connEl.textContent = '🔴 Disconnected'; connEl.style.color = '#ef6b6b'; }
           console.error(err);
         }
       }
-
+      
       document.querySelectorAll('.btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
           e.preventDefault();
@@ -182,59 +324,96 @@
           await postPress(label);
         });
       });
+      // Sensor polling and UI
+      function drawBars(canvas, values, scale) {
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width; const h = canvas.height;
+        ctx.clearRect(0,0,w,h);
+        const labels = ['x','y','z'];
+        const barH = Math.floor(h / 3);
+        for (let i=0;i<3;i++){
+          const v = values[i];
+          const norm = Math.max(-scale, Math.min(scale, v)) / scale; // -1..1
+          const mid = w/2;
+          const len = Math.abs(norm) * (w/2 - 6);
+          const y = i*barH + 4;
+          // background
+          ctx.fillStyle = '#eee';
+          ctx.fillRect(0, y, w, barH-6);
+          // center line
+          ctx.fillStyle = '#bbb';
+          ctx.fillRect(mid-1, y, 2, barH-6);
+          // value bar
+          ctx.fillStyle = norm >= 0 ? '#2b8aef' : '#ef6b6b';
+          if (norm >= 0) ctx.fillRect(mid, y, len, barH-6); else ctx.fillRect(mid-len, y, len, barH-6);
+          // label and value
+          ctx.fillStyle = '#123';
+          ctx.font = '10px sans-serif';
+          ctx.fillText(labels[i]+': '+v.toFixed(2), 6, y + (barH/2)+3);
+        }
+      }
 
-      // Lightweight polling: update gyroscope values, mode, and connection status
       async function fetchSensors() {
         try {
           const resp = await fetch('/sensors');
           if (!resp.ok) throw new Error('network');
           const data = await resp.json();
-          // update connection/mode
-          const connEl = document.getElementById('connection-status');
-          if (connEl) { connEl.textContent = '🟢 Connected'; connEl.style.color = '#2b8aef'; }
+          // Update connection status
+          document.getElementById('connection-status').textContent = '🟢 Connected';
+          document.getElementById('connection-status').style.color = '#2b8aef';
+          
+          // update current mode display if present
           if (data.mode !== undefined) {
-            const modeEl = document.getElementById('mode-text'); if (modeEl) modeEl.textContent = data.mode;
+            document.getElementById('mode-text').textContent = data.mode;
             // only update the main status if it doesn't currently show a recent press
-            if (!statusEl.textContent.startsWith('Pressed:')) statusEl.textContent = `Mode: ${data.mode}`;
-          }
-
-          // update gyros if present
-          if (data.imu1) {
-            if (data.imu1.gyro) {
-              const g1 = data.imu1.gyro;
-              document.getElementById('f1-gyro-x').textContent = g1.x.toFixed(1);
-              document.getElementById('f1-gyro-y').textContent = g1.y.toFixed(1);
-              document.getElementById('f1-gyro-z').textContent = g1.z.toFixed(1);
-            }
-            if (data.imu1.accel) {
-              const a1 = data.imu1.accel;
-              document.getElementById('f1-accel-x').textContent = a1.x.toFixed(2);
-              document.getElementById('f1-accel-y').textContent = a1.y.toFixed(2);
-              document.getElementById('f1-accel-z').textContent = a1.z.toFixed(2);
+            if (!statusEl.textContent.startsWith('Pressed:')) {
+              statusEl.textContent = `Mode: ${data.mode}`;
             }
           }
-          if (data.imu2) {
-            if (data.imu2.gyro) {
-              const g2 = data.imu2.gyro;
-              document.getElementById('f2-gyro-x').textContent = g2.x.toFixed(1);
-              document.getElementById('f2-gyro-y').textContent = g2.y.toFixed(1);
-              document.getElementById('f2-gyro-z').textContent = g2.z.toFixed(1);
-            }
-            if (data.imu2.accel) {
-              const a2 = data.imu2.accel;
-              document.getElementById('f2-accel-x').textContent = a2.x.toFixed(2);
-              document.getElementById('f2-accel-y').textContent = a2.y.toFixed(2);
-              document.getElementById('f2-accel-z').textContent = a2.z.toFixed(2);
-            }
-          }
-        } catch (err) {
-          const connEl = document.getElementById('connection-status');
-          if (connEl) { connEl.textContent = '🔴 Disconnected'; connEl.style.color = '#ef6b6b'; }
+          // Update both gyroscope displays
+          const gyro1 = data.imu1.gyro;
+          const accel1 = data.imu1.accel;
+          document.getElementById('gyro1-x').textContent = gyro1.x.toFixed(2);
+          document.getElementById('gyro1-y').textContent = gyro1.y.toFixed(2);
+          document.getElementById('gyro1-z').textContent = gyro1.z.toFixed(2);
+          document.getElementById('accel1-x').textContent = accel1.x.toFixed(2);
+          document.getElementById('accel1-y').textContent = accel1.y.toFixed(2);
+          document.getElementById('accel1-z').textContent = accel1.z.toFixed(2);
+          
+          const gyro2 = data.imu2.gyro;
+          const accel2 = data.imu2.accel;
+          document.getElementById('gyro2-x').textContent = gyro2.x.toFixed(2);
+          document.getElementById('gyro2-y').textContent = gyro2.y.toFixed(2);
+          document.getElementById('gyro2-z').textContent = gyro2.z.toFixed(2);
+          document.getElementById('accel2-x').textContent = accel2.x.toFixed(2);
+          document.getElementById('accel2-y').textContent = accel2.y.toFixed(2);
+          document.getElementById('accel2-z').textContent = accel2.z.toFixed(2);
+          
+          // Update gyroscope displays on Music Mode page
+          document.getElementById('music-gyro1-x').textContent = gyro1.x.toFixed(2);
+          document.getElementById('music-gyro1-y').textContent = gyro1.y.toFixed(2);
+          document.getElementById('music-gyro1-z').textContent = gyro1.z.toFixed(2);
+          document.getElementById('music-accel1-x').textContent = accel1.x.toFixed(2);
+          document.getElementById('music-accel1-y').textContent = accel1.y.toFixed(2);
+          document.getElementById('music-accel1-z').textContent = accel1.z.toFixed(2);
+          
+          document.getElementById('music-gyro2-x').textContent = gyro2.x.toFixed(2);
+          document.getElementById('music-gyro2-y').textContent = gyro2.y.toFixed(2);
+          document.getElementById('music-gyro2-z').textContent = gyro2.z.toFixed(2);
+          document.getElementById('music-accel2-x').textContent = accel2.x.toFixed(2);
+          document.getElementById('music-accel2-y').textContent = accel2.y.toFixed(2);
+          document.getElementById('music-accel2-z').textContent = accel2.z.toFixed(2);
+        } catch (e) {
+          // Show connection error
+          document.getElementById('connection-status').textContent = '🔴 Disconnected';
+          document.getElementById('connection-status').style.color = '#ef6b6b';
+          //console.warn('sensors', e);
         }
       }
 
-      // poll sensors at 5Hz
+      // Start polling sensors at ~5Hz
       setInterval(fetchSensors, 200);
+      // fetch once immediately
       fetchSensors();
     })();
   </script>
