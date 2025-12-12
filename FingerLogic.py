@@ -174,7 +174,7 @@ def doAction(action, mode):
 
     elif mode == gestures:
         #acceleration
-        if MotionHistory == ['left1x', 'right1x', 'left1x', 'right1x']: # MotionHistory = ['right1x', 'left1x', 'right1x', 'left1x']
+        if MotionHistory == ['left1x', 'right1x', 'left1x', 'right1x'] or MotionHistory == ['right1x', 'left1x', 'right1x', 'left1x']:
             print('wave')
         #Finger1x
         if action == "down1x":
