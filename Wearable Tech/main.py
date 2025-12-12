@@ -11,24 +11,42 @@ try:
 except Exception:
     import json
 
-ssid = "CYBERTRON"
+ssid = "THIRDEARTH"
 pw = "Mr.LamYo"
 
-wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect(ssid, pw)
+# Prefer STA-only operation: attempt to join the router network and
+# allow other devices on the same router to connect to the Pico.
+network_mode = 'unknown'
+try:
+    wlan = network.WLAN(network.STA_IF)
+    wlan.active(True)
+    if ssid:
+        wlan.connect(ssid, pw)
+    # wait up to 60 seconds for connection
+    wait_seconds = 60
+    start = ticks_ms()
+    while not wlan.isconnected() and (ticks_ms() - start) < (wait_seconds * 1000):
+        print('Connecting to WiFi...')
+        sleep(1)
 
-while wlan.isconnected() == False:
-    print ("Connecting... ")
-    sleep(1)
-print("You have connected!")
-
-wlanInfo = wlan.ifconfig()
-print("My Pico's IP adress is ... ", wlanInfo[0])
+    if wlan.isconnected():
+        print('Connected to WiFi')
+        wlanInfo = wlan.ifconfig()
+        print("My Pico's IP address is:", wlanInfo[0])
+        network_mode = 'sta'
+    else:
+        # Do not start an Access Point — the user requested STA be used for other devices.
+        print(f"Warning: STA connection failed after {wait_seconds}s; AP fallback disabled.")
+        network_mode = 'none'
+except Exception as e:
+    print('Network setup error:', e)
+    network_mode = 'error'
 
 # HTTP server for web UI
 web_sock = None
 current_mode = 'idle'  # track current mode from web button presses
+# track connected HTTP client IPs -> timestamp (ms)
+connected_clients = {}
 
 button = Pin(16, Pin.IN, Pin.PULL_DOWN)
 StateLed = Pin(17, Pin.OUT)
@@ -88,6 +106,7 @@ def start_http_server():
 def handle_http_request(conn, addr):
     """Handle a simple HTTP request: GET / or POST /press."""
     global current_mode
+    global connected_clients
     try:
         conn.settimeout(0.5)
         req = b''
@@ -102,6 +121,13 @@ def handle_http_request(conn, addr):
             text = req.decode('utf-8')
         except Exception:
             text = str(req)
+
+        # record client IP activity
+        try:
+            client_ip = addr[0]
+            connected_clients[client_ip] = ticks_ms()
+        except Exception:
+            pass
         
         first_line = text.split('\r\n', 1)[0]
         parts = first_line.split(' ')
@@ -110,11 +136,69 @@ def handle_http_request(conn, addr):
             return
         method, path = parts[0], parts[1]
         
-        # GET / returns simple status
+        # GET / returns the web UI (Controller.html)
         if method == 'GET' and path == '/':
-            body = f'<h1>Pico Wearable Server</h1><p>Mode: {current_mode}</p>'
-            resp = f'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {len(body)}\r\n\r\n{body}'
-            conn.send(resp.encode('utf-8'))
+            try:
+                with open('Controller.html', 'r') as f:
+                    body = f.read()
+            except Exception:
+                body = f'<h1>Pico Wearable Server</h1><p>Mode: {current_mode}</p>'
+            resp = 'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {length}\r\n\r\n{body}'.format(length=len(body), body=body)
+            try:
+                conn.send(resp.encode('utf-8'))
+            except Exception:
+                pass
+            conn.close()
+            return
+
+        # GET /sensors - return current IMU sensor readings as JSON
+        if method == 'GET' and path == '/sensors':
+            try:
+                g1 = imu1.gyro
+                a1 = imu1.accel
+                g2 = imu2.gyro
+                a2 = imu2.accel
+                # prune clients older than 60s and collect recent list
+                now = ticks_ms()
+                recent = []
+                to_remove = []
+                for ip, t in connected_clients.items():
+                    if now - t <= 60000:
+                        recent.append(ip)
+                    else:
+                        to_remove.append(ip)
+                for ip in to_remove:
+                    try:
+                        del connected_clients[ip]
+                    except Exception:
+                        pass
+
+                payload = {
+                    'mode': current_mode,
+                    'clients': recent,
+                    'client_count': len(recent),
+                    'imu1': {
+                        'gyro': {'x': g1.x, 'y': g1.y, 'z': g1.z},
+                        'accel': {'x': a1.x, 'y': a1.y, 'z': a1.z}
+                    },
+                    'imu2': {
+                        'gyro': {'x': g2.x, 'y': g2.y, 'z': g2.z},
+                        'accel': {'x': a2.x, 'y': a2.y, 'z': a2.z}
+                    }
+                }
+                result = json.dumps(payload)
+                resp = 'HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: {length}\r\n\r\n{body}'.format(length=len(result), body=result)
+                try:
+                    conn.send(resp.encode('utf-8'))
+                except Exception:
+                    pass
+            except Exception as e:
+                err = json.dumps({'status': 'error', 'message': str(e)})
+                resp = 'HTTP/1.0 500 Internal Server Error\r\nContent-Type: application/json\r\nContent-Length: {length}\r\n\r\n{body}'.format(length=len(err), body=err)
+                try:
+                    conn.send(resp.encode('utf-8'))
+                except Exception:
+                    pass
             conn.close()
             return
         
@@ -315,3 +399,5 @@ while True:
             sleep(0.1) 
 
         sleep(0.2)
+
+
