@@ -12,10 +12,6 @@ modeCycleButton = Pin(15, Pin.IN, Pin.PULL_DOWN)
 turnedOffA = True
 
 now = ticks_ms()
-lastTimeCheck1 = ticks_ms()
-millisecondsSinceLastTimeCheck1 = now - lastTimeCheck1
-lastTimeCheck2 = ticks_ms()
-millisecondsSinceLastTimeCheck2 = now - lastTimeCheck2
 
 #Sets of I2C
 I2C1 = I2C(0, sda=Pin(0), scl=Pin(1))
