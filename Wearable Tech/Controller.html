@@ -119,8 +119,8 @@
 
     <div class="grid">
       <button class="btn" type="button" id="music-btn">Music Mode</button>
-      <button class="btn" type="button">Battle Mode</button>
-      <button class="btn" type="button">Gesture Mode</button>
+      <button class="btn" type="button" id="battle-btn">Battle Mode</button>
+      <button class="btn" type="button" id="gesture-btn">Gesture Mode</button>
       <button class="btn" type="button">Navigation Mode</button>
     </div>
 
@@ -238,6 +238,86 @@
     </div>
   </div>
 
+  <!-- Battle Mode Page -->
+  <div id="battle-page" class="page" style="display:none;">
+    <button class="btn" type="button" id="back-battle-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
+    <h1 style="margin-top:40px;">⚔️ Battle Mode</h1>
+
+    <div id="move-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
+      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Current Move</div>
+      <div id="current-move" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Waiting for move...</div>
+      <div style="font-size:12px;opacity:0.7;">Use gestures to trigger moves</div>
+    </div>
+
+    <!-- Gyroscope (battle page) -->
+    <div style="width:100%;max-width:720px;margin-top:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
+          <div style="font-family:monospace;font-size:12px;">
+            <div>X: <span id="battle-gyro1-x">0.00</span>°</div>
+            <div>Y: <span id="battle-gyro1-y">0.00</span>°</div>
+            <div>Z: <span id="battle-gyro1-z">0.00</span>°</div>
+          </div>
+        </div>
+        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
+          <div style="font-family:monospace;font-size:12px;">
+            <div>X: <span id="battle-gyro2-x">0.00</span>°</div>
+            <div>Y: <span id="battle-gyro2-y">0.00</span>°</div>
+            <div>Z: <span id="battle-gyro2-z">0.00</span>°</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gesture Mode Page -->
+  <div id="gesture-page" class="page" style="display:none;">
+    <button class="btn" type="button" id="back-gesture-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
+    <h1 style="margin-top:40px;">🤟 Gesture Mode</h1>
+
+    <div id="gesture-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
+      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Last Sent Message</div>
+      <div id="current-message" style="font-size:20px;font-weight:bold;margin-bottom:12px;color:#2B3B53;">No messages yet</div>
+      <div style="font-size:12px;opacity:0.7;">Gestures will send messages to the system (displayed here)</div>
+    </div>
+
+    <!-- Gyroscope (gesture page) -->
+    <div style="width:100%;max-width:720px;margin-top:20px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
+          <div style="font-family:monospace;font-size:12px;">
+            <div>X: <span id="gesture-gyro1-x">0.00</span>°</div>
+            <div>Y: <span id="gesture-gyro1-y">0.00</span>°</div>
+            <div>Z: <span id="gesture-gyro1-z">0.00</span>°</div>
+          </div>
+        </div>
+        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
+          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
+          <div style="font-family:monospace;font-size:12px;">
+            <div>X: <span id="gesture-gyro2-x">0.00</span>°</div>
+            <div>Y: <span id="gesture-gyro2-y">0.00</span>°</div>
+            <div>Z: <span id="gesture-gyro2-z">0.00</span>°</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Example messages -->
+    <div id="gesture-messages" style="width:100%;max-width:600px;margin-top:20px;">
+      <h2 style="text-align:center;margin-bottom:12px;font-size:16px;">📨 Example Messages</h2>
+      <div style="display:grid;gap:8px;">
+        <div class="status" style="text-align:left;padding:10px;">1. ALERT:ENEMY_NEAR</div>
+        <div class="status" style="text-align:left;padding:10px;">2. ACTION:ATTACK</div>
+        <div class="status" style="text-align:left;padding:10px;">3. ACTION:DEFEND</div>
+        <div class="status" style="text-align:left;padding:10px;">4. NAV:RETREAT</div>
+        <div class="status" style="text-align:left;padding:10px;">5. STATUS:OK</div>
+      </div>
+    </div>
+  </div>
+
   <script>
     // Music Mode page management
     const mainPage = document.getElementById('main-page');
@@ -289,6 +369,94 @@
     // Expose functions for gyroscope control (optional)
     window.musicNextSong = nextSong;
     window.musicPrevSong = prevSong;
+
+    // Battle Mode page management
+    const battleBtn = document.getElementById('battle-btn');
+    const battlePage = document.getElementById('battle-page');
+    const battleBackBtn = document.getElementById('back-battle-btn');
+    const currentMoveEl = document.getElementById('current-move');
+
+    const moves = [
+      'Punch',
+      'Kick',
+      'Shield',
+      'Dash',
+      'Ultimate Blast'
+    ];
+    let currentMoveIndex = 0;
+
+    battleBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      mainPage.style.display = 'none';
+      battlePage.style.display = 'flex';
+      currentMoveIndex = 0;
+      updateMoveDisplay();
+    });
+
+    battleBackBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      battlePage.style.display = 'none';
+      mainPage.style.display = 'flex';
+    });
+
+    function updateMoveDisplay() {
+      currentMoveEl.textContent = moves[currentMoveIndex];
+    }
+
+    function nextMove() {
+      currentMoveIndex = (currentMoveIndex + 1) % moves.length;
+      updateMoveDisplay();
+    }
+
+    function prevMove() {
+      currentMoveIndex = (currentMoveIndex - 1 + moves.length) % moves.length;
+      updateMoveDisplay();
+    }
+
+    window.battleNextMove = nextMove;
+    window.battlePrevMove = prevMove;
+
+    // Gesture Mode page management
+    const gestureBtn = document.getElementById('gesture-btn');
+    const gesturePage = document.getElementById('gesture-page');
+    const gestureBackBtn = document.getElementById('back-gesture-btn');
+    const currentMessageEl = document.getElementById('current-message');
+
+    const messages = [
+      'ALERT:ENEMY_NEAR',
+      'ACTION:ATTACK',
+      'ACTION:DEFEND',
+      'NAV:RETREAT',
+      'STATUS:OK'
+    ];
+    let lastMessageIndex = -1;
+
+    gestureBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      mainPage.style.display = 'none';
+      gesturePage.style.display = 'flex';
+      // reset last message display
+      lastMessageIndex = -1;
+      currentMessageEl.textContent = 'No messages yet';
+    });
+
+    gestureBackBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      gesturePage.style.display = 'none';
+      mainPage.style.display = 'flex';
+    });
+
+    function sendGestureMessage(index) {
+      if (index < 0 || index >= messages.length) return;
+      lastMessageIndex = index;
+      const msg = messages[index];
+      currentMessageEl.textContent = msg;
+      // Optionally POST to server to notify (uncomment to enable):
+      // fetch(window.location.origin + '/press', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ button: msg }) });
+    }
+
+    // Expose for external triggers (e.g., gestures mapped in code)
+    window.sendGestureMessage = sendGestureMessage;
 
     // POST button presses to the Pico HTTP server at /press
     (function(){
@@ -403,6 +571,26 @@
           document.getElementById('music-accel2-x').textContent = accel2.x.toFixed(2);
           document.getElementById('music-accel2-y').textContent = accel2.y.toFixed(2);
           document.getElementById('music-accel2-z').textContent = accel2.z.toFixed(2);
+
+          // Update gyroscope displays on Battle Mode page
+          if (document.getElementById('battle-gyro1-x')) {
+            document.getElementById('battle-gyro1-x').textContent = gyro1.x.toFixed(2);
+            document.getElementById('battle-gyro1-y').textContent = gyro1.y.toFixed(2);
+            document.getElementById('battle-gyro1-z').textContent = gyro1.z.toFixed(2);
+            document.getElementById('battle-gyro2-x').textContent = gyro2.x.toFixed(2);
+            document.getElementById('battle-gyro2-y').textContent = gyro2.y.toFixed(2);
+            document.getElementById('battle-gyro2-z').textContent = gyro2.z.toFixed(2);
+          }
+
+          // Update gyroscope displays on Gesture Mode page
+          if (document.getElementById('gesture-gyro1-x')) {
+            document.getElementById('gesture-gyro1-x').textContent = gyro1.x.toFixed(2);
+            document.getElementById('gesture-gyro1-y').textContent = gyro1.y.toFixed(2);
+            document.getElementById('gesture-gyro1-z').textContent = gyro1.z.toFixed(2);
+            document.getElementById('gesture-gyro2-x').textContent = gyro2.x.toFixed(2);
+            document.getElementById('gesture-gyro2-y').textContent = gyro2.y.toFixed(2);
+            document.getElementById('gesture-gyro2-z').textContent = gyro2.z.toFixed(2);
+          }
         } catch (e) {
           // Show connection error
           document.getElementById('connection-status').textContent = '🔴 Disconnected';
