@@ -114,6 +114,8 @@
     <!-- Mode and connection status -->
     <div id="mode-display" class="status" role="status" style="font-weight:bold;font-size:16px;min-width:300px;">Mode: <span id="mode-text">idle</span> | <span id="connection-status" style="color:#ef6b6b;">⚪ Connecting...</span></div>
 
+    <div id="client-display" class="status" style="font-size:13px;min-width:220px;">Connected devices: <span id="client-count">0</span></div>
+
     <!-- status area that updates when a button is pressed -->
     <div id="status" class="status" role="status" aria-live="polite">No button pressed yet</div>
 
@@ -537,6 +539,12 @@
             if (!statusEl.textContent.startsWith('Pressed:')) {
               statusEl.textContent = `Mode: ${data.mode}`;
             }
+          }
+          // update connected clients display
+          if (data.client_count !== undefined) {
+            document.getElementById('client-count').textContent = String(data.client_count);
+          } else if (data.clients !== undefined) {
+            document.getElementById('client-count').textContent = String(data.clients.length);
           }
           // Update both gyroscope displays
           const gyro1 = data.imu1.gyro;
