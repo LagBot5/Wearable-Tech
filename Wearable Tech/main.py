@@ -11,7 +11,7 @@ try:
 except Exception:
     import json
 
-ssid = "THIRDEARTH"
+ssid = "CYBERTRON"
 pw = "Mr.LamYo"
 
 wlan = network.WLAN(network.STA_IF)
@@ -25,8 +25,6 @@ print("You have connected!")
 
 wlanInfo = wlan.ifconfig()
 print("My Pico's IP adress is ... ", wlanInfo[0])
-
-# NOTE: Pico AP disabled — device will only attempt STA (router) connection.
 
 # HTTP server for web UI
 web_sock = None
@@ -112,23 +110,13 @@ def handle_http_request(conn, addr):
             return
         method, path = parts[0], parts[1]
         
-        # GET / returns the controller UI if present on the device
-        if method == 'GET' and (path == '/' or path == '/Controller.html'):
-            try:
-                # Attempt to serve `Controller.html` from the local filesystem
-                with open('Controller.html', 'r') as f:
-                    body = f.read()
-                resp = 'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {}\r\n\r\n{}'.format(len(body), body)
-                conn.send(resp.encode('utf-8'))
-                conn.close()
-                return
-            except Exception:
-                # Fallback to a small status page if file not available
-                body = f'<h1>Pico Wearable Server</h1><p>Mode: {current_mode}</p>'
-                resp = f'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {len(body)}\r\n\r\n{body}'
-                conn.send(resp.encode('utf-8'))
-                conn.close()
-                return
+        # GET / returns simple status
+        if method == 'GET' and path == '/':
+            body = f'<h1>Pico Wearable Server</h1><p>Mode: {current_mode}</p>'
+            resp = f'HTTP/1.0 200 OK\r\nContent-Type: text/html\r\nContent-Length: {len(body)}\r\n\r\n{body}'
+            conn.send(resp.encode('utf-8'))
+            conn.close()
+            return
         
         # POST /press - handle button presses from the web UI
         if method == 'POST' and path == '/press':
@@ -157,64 +145,6 @@ def handle_http_request(conn, addr):
             conn.send(resp.encode('utf-8'))
             conn.close()
             return
-
-        # GET /sensors - return JSON with gyro and accel values for both IMUs
-        if method == 'GET' and path == '/sensors':
-            try:
-                # Read raw sensor integers for both IMUs in quick succession
-                # Use get_gyro_irq / get_accel_irq to fetch raw integer registers
-                imu1.get_gyro_irq()
-                imu1.get_accel_irq()
-                imu2.get_gyro_irq()
-                imu2.get_accel_irq()
-
-                # Raw integer vectors
-                g1_iv = imu1.gyro.ixyz
-                a1_iv = imu1.accel.ixyz
-                g2_iv = imu2.gyro.ixyz
-                a2_iv = imu2.accel.ixyz
-
-                # Scaling factors (match those used in imu.py)
-                gyro_scales = (131.0, 65.5, 32.8, 16.4)
-                accel_scales = (16384.0, 8192.0, 4096.0, 2048.0)
-
-                # Read configured ranges (may perform small I2C reads)
-                g1_range = imu1.gyro_range
-                a1_range = imu1.accel_range
-                g2_range = imu2.gyro_range
-                a2_range = imu2.accel_range
-
-                # Compute scaled float values
-                g1 = {'x': g1_iv[0] / gyro_scales[g1_range], 'y': g1_iv[1] / gyro_scales[g1_range], 'z': g1_iv[2] / gyro_scales[g1_range]}
-                a1 = {'x': a1_iv[0] / accel_scales[a1_range], 'y': a1_iv[1] / accel_scales[a1_range], 'z': a1_iv[2] / accel_scales[a1_range]}
-                g2 = {'x': g2_iv[0] / gyro_scales[g2_range], 'y': g2_iv[1] / gyro_scales[g2_range], 'z': g2_iv[2] / gyro_scales[g2_range]}
-                a2 = {'x': a2_iv[0] / accel_scales[a2_range], 'y': a2_iv[1] / accel_scales[a2_range], 'z': a2_iv[2] / accel_scales[a2_range]}
-
-                payload = {
-                    'imu1': {'gyro': g1, 'accel': a1},
-                    'imu2': {'gyro': g2, 'accel': a2},
-                    'mode': current_mode
-                }
-                body = json.dumps(payload)
-                resp = 'HTTP/1.0 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}'.format(len(body), body)
-                conn.send(resp.encode('utf-8'))
-                conn.close()
-                return
-            except Exception as e:
-                try:
-                    err = json.dumps({'error': str(e)})
-                except Exception:
-                    err = '{"error":"read failed"}'
-                resp = 'HTTP/1.0 500 Internal Server Error\r\nContent-Type: application/json\r\nContent-Length: {}\r\n\r\n{}'.format(len(err), err)
-                try:
-                    conn.send(resp.encode('utf-8'))
-                except Exception:
-                    pass
-                try:
-                    conn.close()
-                except Exception:
-                    pass
-                return
         
         # Default 404
         body = '<h1>Not Found</h1>'
@@ -249,7 +179,6 @@ imu2 = MPU6050(I2C2)
 # Start the HTTP server
 start_http_server()
 
-print("waiting for requests...")
 while True:
     note_playing = False
     
@@ -295,15 +224,14 @@ while True:
 
         #Rotation X
         if gyroscope1.x < -50 and Finger1x == 0:
-            print("Finger1 down (Mode: {})", format(current_mode))
+            print("Finger1 down")
             Finger1x = 1
 
-            # Mode-specific action: Music Mode plays notes
-            if current_mode == 'music mode':
-                print("(C)")
-                sleep(1)
-                playtone(tones['C4'])
-                note_playing = True
+            #Note C
+            print("(C)")
+            sleep(1)
+            playtone(tones['C4'])
+            note_playing = True
             
         if gyroscope1.x > 50 and Finger1x == 1:
             print("Finger1 up")
