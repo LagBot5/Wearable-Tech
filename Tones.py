@@ -126,7 +126,7 @@ def playLittleLamb(tones):
     playtone(tones['C4'])
     sleep(2)
 
-def playRickRoll(tones): # this website https://musescore.com/user/36425149/scores/19913611
+def playDuckSong(tones): # this website https://musescore.com/user/36425149/scores/19913611
     #Measure1
     playtone(tones['F4'])
     sleep(5)
