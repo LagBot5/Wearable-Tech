@@ -125,3 +125,56 @@ def playLittleLamb(tones):
     #Measure8
     playtone(tones['C4'])
     sleep(2)
+
+def playRickRoll(tones): # this website https://musescore.com/user/36425149/scores/19913611
+    #Measure1
+    playtone(tones['F4'])
+    sleep(5)
+    playtone(tones['F4'])
+    sleep(5)
+    playtone(tones['A4'])
+    sleep(5)
+
+    #Measure2
+    playtone(tones['A4']) # 8th notes
+    sleep(5)
+    playtone(tones['B4']) #  "    "
+    sleep(5)
+    playtone(tones['A4']) #  "    "
+    sleep(5)
+
+    playtone(tones['G4'])
+    sleep(5)
+    playtone(tones['C6']) # 3rd space from bottom = 'C6' according to google
+    sleep(5)
+
+    #Measure3
+    playtone(tones['C6'])
+    sleep(5)
+    playtone(tones['C6'])
+    sleep(5)
+    playtone(tones['F4'])
+    sleep(5)
+    
+    playtone(tones['A4']) # 8th notes
+    sleep(5)
+    playtone(tones['B4']) #  "    "
+    sleep(5)
+
+    #Measure4
+    playtone(tones['B4']) # 8th notes
+    sleep(5)
+    playtone(tones['B4']) #  "    "
+    sleep(5)
+
+    playtone(tones['A4'])
+    sleep(5)
+    playtone(tones['G4'])
+    sleep(5)
+
+    playtone(tones['C6']) # 8th notes
+    sleep(5)
+    playtone(tones['C6']) #  "    "
+    sleep(5)
+
+    #Measure5
