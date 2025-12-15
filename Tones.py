@@ -34,3 +34,94 @@ def playtone(frequency):
 
 def bequiet():
     speaker.duty_u16(0) # turn off the speaker PWM
+
+def playLittleLamb(tones):
+    #Measure1
+    playtone(tones['E4'])
+    sleep(0.5)
+    playtone(tones['D4'])
+    sleep(0.5)
+    playtone(tones['C4'])
+    sleep(0.5)
+    playtone(tones['D4'])
+    sleep(0.5)
+
+    #Measure2
+    playtone(tones['E4'])
+    sleep(0.4675)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.4675)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.935)
+
+    #Measure3
+    playtone(tones['D4'])
+    sleep(0.4675)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['D4'])
+    sleep(0.4675)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['D4'])
+    sleep(0.935)
+
+    #Measure4
+    playtone(tones['E4'])
+    sleep(0.4675)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.4675)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.935)
+
+    #Measure5
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.4838)
+    playtone(tones['D4'])
+    sleep(0.4838)
+    playtone(tones['C4'])
+    sleep(0.4838)
+    playtone(tones['D4'])
+    sleep(0.4838)
+
+    #Measure6
+    playtone(tones['E4'])
+    sleep(0.4512)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.4512)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.4512)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['E4'])
+    sleep(0.4512)
+
+    #Measure7
+    playtone(tones['D4'])
+    sleep(0.4838)
+    bequiet()
+    sleep(0.065)
+    playtone(tones['D4'])
+    sleep(0.4838)
+    playtone(tones['E4'])
+    sleep(0.4838)
+    playtone(tones['D4'])
+    sleep(0.4838)
+
+    #Measure8
+    playtone(tones['C4'])
+    sleep(2)
