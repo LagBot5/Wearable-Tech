@@ -1,7 +1,7 @@
 from imu import MPU6050
 from utime import sleep, ticks_ms
 from machine import Pin, I2C, PWM
-from Tones import playtone, setupTones
+from Tones import playtone, setupTones, playLittleLamb
 
 #Finger States
 Finger1x = 0
@@ -22,6 +22,7 @@ Fast2z = 0
 now = ticks_ms()
 lastTimeCheckHistory = ticks_ms()
 MotionHistory = []
+resetTimerMilliseconds = 7000
 
 #Declare Modes Again
 music = 0
@@ -81,7 +82,7 @@ def checkHistory(action):
     if len(MotionHistory) >= 4:
         MotionHistory = []
         MotionHistory.append(action)
-    elif millisecondsSinceLastTimeCheckHistory > 5000:
+    elif millisecondsSinceLastTimeCheckHistory > resetTimerMilliseconds:
         lastTimeCheckHistory = now
         MotionHistory = []
         MotionHistory.append(action)
@@ -94,8 +95,14 @@ def doAction(action, mode):
     checkHistory(action)
     tones = setupTones()
     if mode == music:
+        #Combo
+        if MotionHistory == ["down1x", "down2x", "up2x", "up1x"]:
+            playLittleLamb(tones)
+        elif MotionHistory == ["down2x", "down1x", "up1x", "up2x"]:
+            print('singsong2')
+
         #Finger1x
-        if action == "down1x":
+        elif action == "down1x":
             #Note C
             print("(C)")
             sleep(1)
@@ -173,9 +180,10 @@ def doAction(action, mode):
             print("combat 2y up")
 
     elif mode == gestures:
-        #acceleration
+        #Combo
         if MotionHistory == ['left1x', 'right1x', 'left1x', 'right1x'] or MotionHistory == ['right1x', 'left1x', 'right1x', 'left1x']:
             print('wave')
+
         #Finger1x
         if action == "down1x":
             print("gesture 1x down")
