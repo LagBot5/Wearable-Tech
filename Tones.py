@@ -178,3 +178,15 @@ def playDuckSong(tones): # this website https://musescore.com/user/36425149/scor
     sleep(5)
 
     #Measure5
+    playtone(tones['C6'])
+    sleep(5)
+
+    playtone(tones['C6']) # 8th notes
+    sleep(5)
+    playtone(tones['C6']) #  "    "
+    sleep(5)
+
+    playtone(tones['C6'])
+    sleep(5)
+
+    #Measure6
