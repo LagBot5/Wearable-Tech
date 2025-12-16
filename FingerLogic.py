@@ -1,7 +1,7 @@
 from imu import MPU6050
 from utime import sleep, ticks_ms
 from machine import Pin, I2C, PWM
-from Tones import playtone, setupTones, playLittleLamb
+from Tones import playtone, setupTones, playLittleLamb, playDuckSong
 
 #Finger States
 Finger1x = 0
@@ -99,7 +99,7 @@ def doAction(action, mode):
         if MotionHistory == ["down1x", "down2x", "up2x", "up1x"]:
             playLittleLamb(tones)
         elif MotionHistory == ["down2x", "down1x", "up1x", "up2x"]:
-            print('singsong2')
+            playDuckSong(tones)
 
         #Finger1x
         elif action == "down1x":
