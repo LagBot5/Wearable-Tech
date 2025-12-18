@@ -8,8 +8,8 @@ StateLed = Pin(17, Pin.OUT)
 state = 0
 turnedOffB = True
 
-modeCycleButton = Pin(15, Pin.IN, Pin.PULL_DOWN)
-turnedOffA = True
+#modeCycleButton = Pin(15, Pin.IN, Pin.PULL_DOWN)
+#turnedOffA = True
 
 now = ticks_ms()
 
@@ -57,15 +57,15 @@ while True:
     accel2 = imu2.accel
 
     # short term mode cycling button
-    if modeCycleButton.value() == 1:
-        if turnedOffA == True:
-            turnedOffA = False
-            mode += 1
-            if mode >= 4:
-                mode = 0
-            print(mode)
-    elif modeCycleButton.value() == 0:
-        turnedOffA = True
+#    if modeCycleButton.value() == 1:
+#        if turnedOffA == True:
+#            turnedOffA = False
+#            mode += 1
+#            if mode >= 4:
+#                mode = 0
+#            print(mode)
+#    elif modeCycleButton.value() == 0:
+#        turnedOffA = True
 
     # Debounced power button
     if button.value() == 1:
