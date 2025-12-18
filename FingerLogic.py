@@ -99,7 +99,8 @@ def doAction(action, mode):
         if MotionHistory == ["down1x", "down2x", "up2x", "up1x"]:
             playLittleLamb(tones)
         elif MotionHistory == ["down2x", "down1x", "up1x", "up2x"]:
-            playDuckSong(tones)
+            #playDuckSong(tones)
+            print('incomplete duck song')
 
         #Finger1x
         elif action == "down1x":
