@@ -210,8 +210,15 @@ def handle_car_command(car, command, speed=70):
         print(f"Unknown command: {command}")
 
 
-def setup_wifi_client(ssid, password):
+def setup_wifi_client(ssid="THIRDEARTH", password="Mr.LamYo"):
     """Connect to existing WiFi network to receive commands"""
+    print('\n' + '='*50)
+    print('🚗 GHOST CAR INITIALIZATION')
+    print('='*50)
+    print(f'   Target Network: {ssid}')
+    print('   Connecting to WiFi...')
+    print('='*50 + '\n')
+    
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     
@@ -238,8 +245,8 @@ def setup_wifi_client(ssid, password):
         print(f'  🔌 Port: 8080')
         print(f'  ✅ Status: READY TO RECEIVE COMMANDS')
         print('='*50)
-        print(f'📝 Configuration:')
-        print(f'   Set car_ip = "{ip_info[0]}" in main.py')
+        print('📝 COPY THIS LINE TO main.py (around line 77):')
+        print(f'   car_ip = "{ip_info[0]}"')
         print('='*50 + '\n')
         print('🎮 Waiting for gyroscope commands...')
         print('   Ready to receive: forward, backward, left, right, stop\n')
