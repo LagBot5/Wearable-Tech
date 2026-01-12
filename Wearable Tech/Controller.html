@@ -98,6 +98,22 @@
     /* optional small labels under buttons */
     .label{font-size:12px;opacity:0.9;margin-top:6px}
 
+    /* Connection pulse animation */
+    @keyframes pulse {
+      0% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.05); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    
+    .connected-pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    /* Smooth transitions for connection states */
+    #connection-banner, #connection-status {
+      transition: all 0.3s ease;
+    }
+
     /* responsive tweaks */
     @media (max-width:420px){
       .btn{height:88px;width:88px;font-size:14px;border-radius:14px}
@@ -111,54 +127,50 @@
   <div id="main-page" class="page">
     <h1>Wearable Control</h1>
 
+    <!-- Connection Status -->
+    <div id="connection-banner" class="status" style="background:rgba(52,152,219,0.15);border-left:4px solid #3498db;text-align:center;min-width:350px;max-width:600px;padding:20px;font-size:18px;font-weight:bold;">
+      ⚪ Connecting to Pi Pico...
+    </div>
+
+    <!-- System State Dashboard -->
+    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
+        <span style="font-weight:600;">Power:</span>
+        <span id="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
+        
+        <span style="font-weight:600;">Mode:</span>
+        <span id="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
+        
+        <span style="font-weight:600;">Devices:</span>
+        <span id="state-devices" style="font-weight:bold;">Unknown</span>
+        
+        <span style="font-weight:600;">Network:</span>
+        <span id="state-network" style="font-weight:bold;">Checking...</span>
+        
+        <span style="font-weight:600;">Web Clients:</span>
+        <span id="state-clients" style="font-weight:bold;">0</span>
+        
+        <span style="font-weight:600;">Current Song:</span>
+        <span id="state-song" style="font-weight:bold;">None</span>
+      </div>
+    </div>
+
     <!-- Mode and connection status -->
-    <div id="mode-display" class="status" role="status" style="font-weight:bold;font-size:16px;min-width:300px;">Mode: <span id="mode-text">idle</span> | <span id="connection-status" style="color:#ef6b6b;">⚪ Connecting...</span></div>
+    <div id="mode-display" class="status" role="status" style="font-weight:bold;font-size:16px;min-width:300px;">Mode: <span id="mode-text">idle</span> | <span id="connection-status" style="color:#95a5a6;">⚪ Connecting...</span></div>
 
-    <div id="client-display" class="status" style="font-size:13px;min-width:220px;">Connected devices: <span id="client-count">0</span></div>
-
-    <!-- status area that updates when a button is pressed -->
-    <div id="status" class="status" role="status" aria-live="polite">No button pressed yet</div>
+    <div id="client-display" class="status" style="font-size:13px;min-width:220px;background:rgba(46,204,113,0.1);">
+      <span style="font-weight:600;">Web Clients Connected:</span> <span id="client-count" style="font-weight:bold;color:#27ae60;">0</span>
+    </div>
 
     <div class="grid">
       <button class="btn" type="button" id="music-btn">Music Mode</button>
       <button class="btn" type="button" id="battle-btn">Battle Mode</button>
       <button class="btn" type="button" id="gesture-btn">Gesture Mode</button>
-      <button class="btn" type="button">Navigation Mode</button>
+      <button class="btn" type="button" id="nav-btn">Navigation Mode</button>
     </div>
 
-    <!-- Sensor display with both gyroscopes -->
-    <div style="width:100%;max-width:720px;margin-top:18px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <!-- Gyroscope 1 -->
-        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
-          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
-            <div><strong>Acceleration (m/s²):</strong></div>
-            <div style="margin-left:8px;">X: <span id="accel1-x">0.00</span></div>
-            <div style="margin-left:8px;">Y: <span id="accel1-y">0.00</span></div>
-            <div style="margin-left:8px;">Z: <span id="accel1-z">0.00</span></div>
-            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
-            <div style="margin-left:8px;">X: <span id="gyro1-x">0.00</span>°</div>
-            <div style="margin-left:8px;">Y: <span id="gyro1-y">0.00</span>°</div>
-            <div style="margin-left:8px;">Z: <span id="gyro1-z">0.00</span>°</div>
-          </div>
-        </div>
-        <!-- Gyroscope 2 -->
-        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
-          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
-            <div><strong>Acceleration (m/s²):</strong></div>
-            <div style="margin-left:8px;">X: <span id="accel2-x">0.00</span></div>
-            <div style="margin-left:8px;">Y: <span id="accel2-y">0.00</span></div>
-            <div style="margin-left:8px;">Z: <span id="accel2-z">0.00</span></div>
-            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
-            <div style="margin-left:8px;">X: <span id="gyro2-x">0.00</span>°</div>
-            <div style="margin-left:8px;">Y: <span id="gyro2-y">0.00</span>°</div>
-            <div style="margin-left:8px;">Z: <span id="gyro2-z">0.00</span>°</div>
-          </div>
-        </div>
-      </div>
-    </div>
+
   </div>
 
   <!-- Music Mode Page -->
@@ -167,75 +179,89 @@
     
     <h1 style="margin-top:40px;">🎵 Music Mode</h1>
 
+    <!-- System State Dashboard -->
+    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
+        <span style="font-weight:600;">Power:</span>
+        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
+        
+        <span style="font-weight:600;">Mode:</span>
+        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
+        
+        <span style="font-weight:600;">Devices:</span>
+        <span class="state-devices" style="font-weight:bold;">Unknown</span>
+        
+        <span style="font-weight:600;">Network:</span>
+        <span class="state-network" style="font-weight:bold;">Checking...</span>
+        
+        <span style="font-weight:600;">Web Clients:</span>
+        <span class="state-clients" style="font-weight:bold;">0</span>
+        
+        <span style="font-weight:600;">Current Song:</span>
+        <span class="state-song" style="font-weight:bold;">None</span>
+      </div>
+    </div>
+
     <div id="song-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
       <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Now Playing</div>
       <div id="current-song" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Waiting for song...</div>
       <div style="font-size:12px;opacity:0.7;">Interact with your finger to change songs</div>
     </div>
 
-    <!-- Sensor display with both gyroscopes -->
-    <div style="width:100%;max-width:720px;margin-top:20px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <!-- Gyroscope 1 -->
-        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
-          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
-            <div><strong>Acceleration (m/s²):</strong></div>
-            <div style="margin-left:8px;">X: <span id="music-accel1-x">0.00</span></div>
-            <div style="margin-left:8px;">Y: <span id="music-accel1-y">0.00</span></div>
-            <div style="margin-left:8px;">Z: <span id="music-accel1-z">0.00</span></div>
-            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
-            <div style="margin-left:8px;">X: <span id="music-gyro1-x">0.00</span>°</div>
-            <div style="margin-left:8px;">Y: <span id="music-gyro1-y">0.00</span>°</div>
-            <div style="margin-left:8px;">Z: <span id="music-gyro1-z">0.00</span>°</div>
+    <!-- Volume Control -->
+    <div class="status" style="min-width:300px;max-width:600px;padding:16px;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span style="font-size:18px;">🔊</span>
+        <div style="flex:1;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;">
+            <span>Volume</span>
+            <span id="volume-value">50%</span>
           </div>
-        </div>
-        <!-- Gyroscope 2 -->
-        <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
-          <div style="font-size:12px;line-height:1.8;font-family:monospace;">
-            <div><strong>Acceleration (m/s²):</strong></div>
-            <div style="margin-left:8px;">X: <span id="music-accel2-x">0.00</span></div>
-            <div style="margin-left:8px;">Y: <span id="music-accel2-y">0.00</span></div>
-            <div style="margin-left:8px;">Z: <span id="music-accel2-z">0.00</span></div>
-            <div style="margin-top:6px;"><strong>Rotational Axis (°/s):</strong></div>
-            <div style="margin-left:8px;">X: <span id="music-gyro2-x">0.00</span>°</div>
-            <div style="margin-left:8px;">Y: <span id="music-gyro2-y">0.00</span>°</div>
-            <div style="margin-left:8px;">Z: <span id="music-gyro2-z">0.00</span>°</div>
-          </div>
+          <input type="range" id="volume-slider" min="0" max="100" value="50" style="width:100%;height:6px;border-radius:3px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent) 50%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 100%);outline:none;-webkit-appearance:none;appearance:none;cursor:pointer;" />
         </div>
       </div>
     </div>
 
+    <div id="sequence-display" class="status" style="background:rgba(43,138,239,0.12);border-left:4px solid #2b8aef;text-align:left;min-width:300px;max-width:600px;padding:16px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
+      <div>
+        <div style="font-size:14px;font-weight:bold;margin-bottom:6px;">Sequence</div>
+        <div id="sequence-text" style="font-size:12px;opacity:0.85;">No sequence yet</div>
+      </div>
+      <button class="btn" type="button" id="sequence-reset" style="height:46px;width:140px;border-radius:14px;font-size:14px;">Reset Sequence</button>
+    </div>
+
+
+
     <!-- Example songs playlist -->
     <div id="playlist" style="width:100%;max-width:600px;margin-top:20px;">
-      <h2 style="text-align:center;margin-bottom:15px;font-size:18px;">📜 Playlist Examples</h2>
-      <div style="display:grid;gap:10px;">
-        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
-          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">1. Moonlight Sonata</div>
-          <div style="font-size:12px;opacity:0.8;">Classical - Ludwig van Beethoven</div>
-          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 5:28 | Tempo: Adagio sostenuto</div>
-        </div>
-        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
-          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">2. Bohemian Rhapsody</div>
-          <div style="font-size:12px;opacity:0.8;">Rock - Queen</div>
-          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 5:55 | Tempo: Rock Ballad</div>
-        </div>
-        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
-          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">3. Levitating</div>
-          <div style="font-size:12px;opacity:0.8;">Pop - Dua Lipa</div>
-          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 3:23 | Tempo: 103 BPM</div>
-        </div>
-        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
-          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">4. Blinding Lights</div>
-          <div style="font-size:12px;opacity:0.8;">Synthwave - The Weeknd</div>
-          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 3:20 | Tempo: 87 BPM</div>
-        </div>
-        <div class="status" style="background:rgba(255,255,255,0.08);text-align:left;padding:15px;">
-          <div style="font-size:14px;font-weight:bold;margin-bottom:5px;">5. Wake Me Up</div>
-          <div style="font-size:12px;opacity:0.8;">EDM - Avicii</div>
-          <div style="font-size:11px;opacity:0.6;margin-top:5px;">Duration: 4:09 | Tempo: 120 BPM</div>
-        </div>
+      <h2 style="text-align:center;margin-bottom:15px;font-size:18px;">📜 Song Selection</h2>
+      <div style="display:grid;gap:12px;">
+        <button class="btn song-btn" data-song="Moonlight Sonata" data-url="https://www.youtube.com/watch?v=4Tr0otuiQuU" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
+          <div style="font-size:15px;font-weight:bold;">🎹 1. Moonlight Sonata</div>
+          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Classical - Ludwig van Beethoven</div>
+          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 5:28 | Tempo: Adagio sostenuto</div>
+        </button>
+        <button class="btn song-btn" data-song="Bohemian Rhapsody" data-url="https://www.youtube.com/watch?v=fJ9rUzIMcZQ" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
+          <div style="font-size:15px;font-weight:bold;">🎸 2. Bohemian Rhapsody</div>
+          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Rock - Queen</div>
+          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 5:55 | Tempo: Rock Ballad</div>
+        </button>
+        <button class="btn song-btn" data-song="Levitating" data-url="https://www.youtube.com/watch?v=TUVcZfQe-Kw" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
+          <div style="font-size:15px;font-weight:bold;">✨ 3. Levitating</div>
+          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Pop - Dua Lipa</div>
+          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 3:23 | Tempo: 103 BPM</div>
+        </button>
+        <button class="btn song-btn" data-song="Blinding Lights" data-url="https://www.youtube.com/watch?v=4NRXx6U8ABQ" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
+          <div style="font-size:15px;font-weight:bold;">💫 4. Blinding Lights</div>
+          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Synthwave - The Weeknd</div>
+          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 3:20 | Tempo: 87 BPM</div>
+        </button>
+        <button class="btn song-btn" data-song="Wake Me Up" data-url="https://www.youtube.com/watch?v=IcrbM1l_BoI" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
+          <div style="font-size:15px;font-weight:bold;">🎧 5. Wake Me Up</div>
+          <div style="font-size:12px;opacity:0.85;font-weight:normal;">EDM - Avicii</div>
+          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 4:09 | Tempo: 120 BPM</div>
+        </button>
       </div>
     </div>
   </div>
@@ -245,33 +271,37 @@
     <button class="btn" type="button" id="back-battle-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
     <h1 style="margin-top:40px;">⚔️ Battle Mode</h1>
 
+    <!-- System State Dashboard -->
+    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
+        <span style="font-weight:600;">Power:</span>
+        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
+        
+        <span style="font-weight:600;">Mode:</span>
+        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
+        
+        <span style="font-weight:600;">Devices:</span>
+        <span class="state-devices" style="font-weight:bold;">Unknown</span>
+        
+        <span style="font-weight:600;">Network:</span>
+        <span class="state-network" style="font-weight:bold;">Checking...</span>
+        
+        <span style="font-weight:600;">Web Clients:</span>
+        <span class="state-clients" style="font-weight:bold;">0</span>
+        
+        <span style="font-weight:600;">Current Song:</span>
+        <span class="state-song" style="font-weight:bold;">None</span>
+      </div>
+    </div>
+
     <div id="move-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
       <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Current Move</div>
       <div id="current-move" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Waiting for move...</div>
       <div style="font-size:12px;opacity:0.7;">Use gestures to trigger moves</div>
     </div>
 
-    <!-- Gyroscope (battle page) -->
-    <div style="width:100%;max-width:720px;margin-top:20px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
-          <div style="font-family:monospace;font-size:12px;">
-            <div>X: <span id="battle-gyro1-x">0.00</span>°</div>
-            <div>Y: <span id="battle-gyro1-y">0.00</span>°</div>
-            <div>Z: <span id="battle-gyro1-z">0.00</span>°</div>
-          </div>
-        </div>
-        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
-          <div style="font-family:monospace;font-size:12px;">
-            <div>X: <span id="battle-gyro2-x">0.00</span>°</div>
-            <div>Y: <span id="battle-gyro2-y">0.00</span>°</div>
-            <div>Z: <span id="battle-gyro2-z">0.00</span>°</div>
-          </div>
-        </div>
-      </div>
-    </div>
+
   </div>
 
   <!-- Gesture Mode Page -->
@@ -279,33 +309,37 @@
     <button class="btn" type="button" id="back-gesture-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
     <h1 style="margin-top:40px;">🤟 Gesture Mode</h1>
 
+    <!-- System State Dashboard -->
+    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
+        <span style="font-weight:600;">Power:</span>
+        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
+        
+        <span style="font-weight:600;">Mode:</span>
+        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
+        
+        <span style="font-weight:600;">Devices:</span>
+        <span class="state-devices" style="font-weight:bold;">Unknown</span>
+        
+        <span style="font-weight:600;">Network:</span>
+        <span class="state-network" style="font-weight:bold;">Checking...</span>
+        
+        <span style="font-weight:600;">Web Clients:</span>
+        <span class="state-clients" style="font-weight:bold;">0</span>
+        
+        <span style="font-weight:600;">Current Song:</span>
+        <span class="state-song" style="font-weight:bold;">None</span>
+      </div>
+    </div>
+
     <div id="gesture-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
       <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Last Sent Message</div>
       <div id="current-message" style="font-size:20px;font-weight:bold;margin-bottom:12px;color:#2B3B53;">No messages yet</div>
       <div style="font-size:12px;opacity:0.7;">Gestures will send messages to the system (displayed here)</div>
     </div>
 
-    <!-- Gyroscope (gesture page) -->
-    <div style="width:100%;max-width:720px;margin-top:20px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 1</strong>
-          <div style="font-family:monospace;font-size:12px;">
-            <div>X: <span id="gesture-gyro1-x">0.00</span>°</div>
-            <div>Y: <span id="gesture-gyro1-y">0.00</span>°</div>
-            <div>Z: <span id="gesture-gyro1-z">0.00</span>°</div>
-          </div>
-        </div>
-        <div class="status" style="background:rgba(43,138,239,0.12);text-align:left;">
-          <strong style="display:block;margin-bottom:8px;">🔄 Gyroscope 2</strong>
-          <div style="font-family:monospace;font-size:12px;">
-            <div>X: <span id="gesture-gyro2-x">0.00</span>°</div>
-            <div>Y: <span id="gesture-gyro2-y">0.00</span>°</div>
-            <div>Z: <span id="gesture-gyro2-z">0.00</span>°</div>
-          </div>
-        </div>
-      </div>
-    </div>
+
 
     <!-- Example messages -->
     <div id="gesture-messages" style="width:100%;max-width:600px;margin-top:20px;">
@@ -320,13 +354,123 @@
     </div>
   </div>
 
+  <!-- Navigation Mode Page -->
+  <div id="nav-page" class="page" style="display:none;">
+    <button class="btn" type="button" id="back-nav-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
+    <h1 style="margin-top:40px;">🚗 Navigation Mode</h1>
+
+    <!-- System State Dashboard -->
+    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
+      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
+      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
+        <span style="font-weight:600;">Power:</span>
+        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
+        
+        <span style="font-weight:600;">Mode:</span>
+        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
+        
+        <span style="font-weight:600;">Devices:</span>
+        <span class="state-devices" style="font-weight:bold;">Unknown</span>
+        
+        <span style="font-weight:600;">Network:</span>
+        <span class="state-network" style="font-weight:bold;">Checking...</span>
+        
+        <span style="font-weight:600;">Web Clients:</span>
+        <span class="state-clients" style="font-weight:bold;">0</span>
+        
+        <span style="font-weight:600;">Current Song:</span>
+        <span class="state-song" style="font-weight:bold;">None</span>
+      </div>
+    </div>
+
+    <div id="nav-status-display" class="status" style="background:rgba(46,204,113,0.15);border-left:4px solid #2ecc71;text-align:center;min-width:300px;max-width:600px;padding:20px;">
+      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Car Status</div>
+      <div id="car-status" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Ready</div>
+      <div style="font-size:12px;opacity:0.7;">Tilt left/right to steer, forward/backward to drive</div>
+    </div>
+
+    <!-- Brake Button -->
+    <button class="btn" type="button" id="brake-btn" style="height:140px;width:140px;font-size:24px;background:linear-gradient(135deg, #ef6b6b 0%, #e74c3c 100%);box-shadow:0 8px 20px rgba(231,76,60,0.3);">
+      🛑 BRAKE
+    </button>
+
+    <div class="status" style="background:rgba(255,200,87,0.15);border-left:4px solid #f39c12;text-align:left;min-width:300px;max-width:600px;padding:16px;">
+      <div style="font-size:14px;font-weight:bold;margin-bottom:8px;">⚠️ Safety Tips</div>
+      <div style="font-size:12px;line-height:1.6;">
+        • Press BRAKE button for emergency stop<br>
+        • Keep car in sight at all times<br>
+        • Test in open area away from obstacles<br>
+        • Exit Navigation Mode to stop car
+      </div>
+    </div>
+  </div>
+
   <script>
-    // Music Mode page management
+    // ========== AUTOMATIC CONNECTION ==========
+    // Automatically connect to Pico using current host
+    const API_BASE = window.location.protocol + '//' + window.location.host;
+    const PICO_IP = window.location.hostname;
+    
+    console.log('[STARTUP] ===========================================');
+    console.log('[STARTUP] Wearable Control Web App Starting...');
+    console.log('[STARTUP] Auto-connecting to:', PICO_IP);
+    console.log('[STARTUP] API Base:', API_BASE);
+    console.log('[STARTUP] ===========================================');
+    
+    // Get ALL page elements first (before any event listeners)
     const mainPage = document.getElementById('main-page');
     const musicPage = document.getElementById('music-page');
+    const battlePage = document.getElementById('battle-page');
+    const gesturePage = document.getElementById('gesture-page');
+    const navPage = document.getElementById('nav-page');
+    
+    // Verify all pages exist (log if any missing)
+    if (!mainPage || !musicPage || !battlePage || !gesturePage || !navPage) {
+      console.warn('[WARNING] One or more page elements not found!');
+      console.log('[PAGE CHECK] mainPage:', !!mainPage);
+      console.log('[PAGE CHECK] musicPage:', !!musicPage);
+      console.log('[PAGE CHECK] battlePage:', !!battlePage);
+      console.log('[PAGE CHECK] gesturePage:', !!gesturePage);
+      console.log('[PAGE CHECK] navPage:', !!navPage);
+    }
+    
+    // Get ALL button elements
     const musicBtn = document.getElementById('music-btn');
     const backBtn = document.getElementById('back-btn');
+    const battleBtn = document.getElementById('battle-btn');
+    const battleBackBtn = document.getElementById('back-battle-btn');
+    const gestureBtn = document.getElementById('gesture-btn');
+    const gestureBackBtn = document.getElementById('back-gesture-btn');
+    const navBtn = document.getElementById('nav-btn');
+    const navBackBtn = document.getElementById('back-nav-btn');
+    const brakeBtn = document.getElementById('brake-btn');
+    
+    // Verify all buttons exist
+    console.log('[INIT] Button check - musicBtn:', !!musicBtn, 'battleBtn:', !!battleBtn, 'gestureBtn:', !!gestureBtn, 'navBtn:', !!navBtn);
+    
+    // Get display elements
     const currentSongEl = document.getElementById('current-song');
+    const currentMoveEl = document.getElementById('current-move');
+    const currentMessageEl = document.getElementById('current-message');
+    const carStatusEl = document.getElementById('car-status');
+    
+    const rootEl = document.documentElement;
+    const setPageId = (mode) => {
+      if (!mode) return;
+      rootEl.id = `mode-${mode}`;
+    };
+    const sequenceTextEl = document.getElementById('sequence-text');
+    const sequenceResetBtn = document.getElementById('sequence-reset');
+    let sequenceLog = [];
+
+    const songAlias = (name) => {
+      if (!name) return '';
+      return name;
+    };
+
+    function renderSequence() {
+      sequenceTextEl.textContent = sequenceLog.length ? sequenceLog.join(' → ') : 'No sequence yet';
+    }
 
     // Sample songs list
     const songs = [
@@ -336,23 +480,68 @@
       '💫 Blinding Lights - The Weeknd',
       '🎧 Wake Me Up - Avicii'
     ];
+    
     let currentSongIndex = 0;
 
     // Show Music Mode page
-    musicBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      mainPage.style.display = 'none';
-      musicPage.style.display = 'flex';
-      currentSongIndex = 0;
-      updateSongDisplay();
-    });
+    if (musicBtn) {
+      musicBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log('[PAGE SWITCH] Switching to Music Mode');
+        
+        // Hide all other pages
+        if (mainPage) mainPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show music page
+        if (musicPage) musicPage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'music'}, '', '/music_mode');
+        
+        // Send mode change to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            console.log('[SERVER] Sending mode change: Music Mode');
+            await postPressToServer('Music Mode');
+            console.log('[SERVER] Mode change sent successfully');
+          }
+        } catch(err) { 
+          console.warn('[ERROR] Mode change failed:', err);
+        }
+      });
+    }
 
     // Back button to return to main page
-    backBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      musicPage.style.display = 'none';
-      mainPage.style.display = 'flex';
-    });
+    if (backBtn) {
+      backBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log('[PAGE SWITCH] Returning to Main page');
+        
+        // Hide all other pages
+        if (musicPage) musicPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show main page
+        if (mainPage) mainPage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'main'}, '', '/');
+        
+        // Send idle mode to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            await postPressToServer('Idle');
+          }
+        } catch(err) { 
+          console.warn('Mode change error:', err);
+        }
+      });
+    }
 
     function updateSongDisplay() {
       currentSongEl.textContent = songs[currentSongIndex];
@@ -372,12 +561,68 @@
     window.musicNextSong = nextSong;
     window.musicPrevSong = prevSong;
 
-    // Battle Mode page management
-    const battleBtn = document.getElementById('battle-btn');
-    const battlePage = document.getElementById('battle-page');
-    const battleBackBtn = document.getElementById('back-battle-btn');
-    const currentMoveEl = document.getElementById('current-move');
+    sequenceResetBtn.addEventListener('click', () => {
+      sequenceLog = [];
+      renderSequence();
+      try { document.getElementById('status').textContent = 'Sequence reset'; } catch(e) {}
+    });
 
+    function playSongByName(name){
+      const statusEl = document.getElementById('status');
+      const canonical = songAlias(name);
+      try{
+        // Don't play melody on web - will play on buzzer
+        // Open YouTube video instead
+        const youtubeUrls = {
+          'Moonlight Sonata': 'https://www.youtube.com/watch?v=4Tr0otuiQuU&list=RD4Tr0otuiQuU&start_radio=1',
+          'Bohemian Rhapsody': 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ&list=RDfJ9rUzIMcZQ&start_radio=1'
+        };
+        if (youtubeUrls[canonical]) {
+          window.open(youtubeUrls[canonical], '_blank');
+        }
+        statusEl.textContent = `Song triggered: ${canonical} (Playing on buzzer + YouTube)`;
+        // Only update sequence if in music mode
+        if (musicPage.style.display !== 'none') {
+          sequenceLog.push(canonical);
+          if (sequenceLog.length > 8) sequenceLog.shift();
+          renderSequence();
+        }
+      }catch(e){ console.warn('playSongByName', e); }
+    }
+
+    // Song button handlers - play song and open YouTube
+    document.querySelectorAll('.song-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const songName = btn.getAttribute('data-song');
+        const youtubeUrl = btn.getAttribute('data-url');
+        
+        // Update display
+        document.getElementById('current-song').textContent = songName;
+        document.getElementById('status').textContent = `Now playing: ${songName}`;
+        
+        // Add to sequence only if in music mode
+        if (musicPage.style.display !== 'none') {
+          sequenceLog.push(songName);
+          if (sequenceLog.length > 8) sequenceLog.shift();
+          renderSequence();
+        }
+        
+        // Open YouTube
+        if (youtubeUrl) {
+          window.open(youtubeUrl, '_blank');
+        }
+        
+        // Visual feedback
+        btn.animate([
+          { transform: 'scale(1)' }, 
+          { transform: 'scale(0.98)' }, 
+          { transform: 'scale(1)' }
+        ], { duration: 200, easing: 'ease-out' });
+      });
+    });
+
+    // Battle Mode page management
     const moves = [
       'Punch',
       'Kick',
@@ -387,19 +632,63 @@
     ];
     let currentMoveIndex = 0;
 
-    battleBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      mainPage.style.display = 'none';
-      battlePage.style.display = 'flex';
-      currentMoveIndex = 0;
-      updateMoveDisplay();
-    });
+    if (battleBtn) {
+      battleBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log('[PAGE SWITCH] Switching to Battle Mode');
+        
+        // Hide all pages
+        if (mainPage) mainPage.style.display = 'none';
+        if (musicPage) musicPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show battle page
+        if (battlePage) battlePage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'battle'}, '', '/battle_mode');
+        
+        // Send mode change to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            console.log('[SERVER] Sending mode change: Battle Mode');
+            await postPressToServer('Battle Mode');
+            console.log('[SERVER] Mode change sent successfully');
+          }
+        } catch(err) { 
+          console.warn('[ERROR] Mode change failed:', err);
+        }
+      });
+    }
 
-    battleBackBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      battlePage.style.display = 'none';
-      mainPage.style.display = 'flex';
-    });
+    if (battleBackBtn) {
+      battleBackBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        // Hide all other pages
+        if (musicPage) musicPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show main page
+        if (mainPage) mainPage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'main'}, '', '/');
+        
+        // Send idle mode to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            await postPressToServer('Idle');
+          }
+        } catch(err) { 
+          console.warn('Mode change error:', err); 
+        }
+      });
+    }
 
     function updateMoveDisplay() {
       currentMoveEl.textContent = moves[currentMoveIndex];
@@ -419,34 +708,158 @@
     window.battlePrevMove = prevMove;
 
     // Gesture Mode page management
-    const gestureBtn = document.getElementById('gesture-btn');
-    const gesturePage = document.getElementById('gesture-page');
-    const gestureBackBtn = document.getElementById('back-gesture-btn');
-    const currentMessageEl = document.getElementById('current-message');
-
     const messages = [
       'ALERT:ENEMY_NEAR',
       'ACTION:ATTACK',
       'ACTION:DEFEND',
-      'NAV:RETREAT',
+      'ACTION:RETREAT',
       'STATUS:OK'
     ];
     let lastMessageIndex = -1;
 
-    gestureBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      mainPage.style.display = 'none';
-      gesturePage.style.display = 'flex';
-      // reset last message display
-      lastMessageIndex = -1;
-      currentMessageEl.textContent = 'No messages yet';
-    });
+    if (gestureBtn) {
+      gestureBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log('[PAGE SWITCH] Switching to Gesture Mode');
+        
+        // Hide all pages
+        if (mainPage) mainPage.style.display = 'none';
+        if (musicPage) musicPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show gesture page
+        if (gesturePage) gesturePage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'gesture'}, '', '/gesture_mode');
+        
+        // Send mode change to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            console.log('[SERVER] Sending mode change: Gesture Mode');
+            await postPressToServer('Gesture Mode');
+            console.log('[SERVER] Mode change sent successfully');
+          }
+        } catch(err) { 
+          console.warn('[ERROR] Mode change failed:', err);
+        }
+      });
+    }
 
-    gestureBackBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      gesturePage.style.display = 'none';
-      mainPage.style.display = 'flex';
-    });
+    if (gestureBackBtn) {
+      gestureBackBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        // Hide all other pages
+        if (musicPage) musicPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show main page
+        if (mainPage) mainPage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'main'}, '', '/');
+        
+        // Send idle mode to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            await postPressToServer('Idle');
+          }
+        } catch(err) { console.warn('Mode change error:', err); }
+      });
+    }
+
+    // Navigation Mode page management
+    if (navBtn) {
+      navBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log('[PAGE SWITCH] Switching to Navigation Mode');
+        
+        // Hide all pages
+        if (mainPage) mainPage.style.display = 'none';
+        if (musicPage) musicPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show navigation page
+        if (navPage) navPage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'navigation'}, '', '/navigation_mode');
+        
+        // Send mode change to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            console.log('[SERVER] Sending mode change: Navigation Mode');
+            await postPressToServer('Navigation Mode');
+            console.log('[SERVER] Mode change sent successfully');
+          }
+        } catch(err) { 
+          console.warn('[ERROR] Mode change failed:', err);
+        }
+      });
+    }
+
+    if (navBackBtn) {
+      navBackBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        
+        // Hide all other pages
+        if (musicPage) musicPage.style.display = 'none';
+        if (battlePage) battlePage.style.display = 'none';
+        if (gesturePage) gesturePage.style.display = 'none';
+        if (navPage) navPage.style.display = 'none';
+        
+        // Show main page
+        if (mainPage) mainPage.style.display = 'flex';
+        
+        // Update URL without reload
+        window.history.pushState({page: 'main'}, '', '/');
+        
+        // Send idle mode to Pico
+        try {
+          if (typeof postPressToServer === 'function') {
+            await postPressToServer('Idle');
+          }
+        } catch(err) { console.warn('Mode change error:', err); }
+      });
+    }
+
+    // Brake button - emergency stop
+    if (brakeBtn) {
+      brakeBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (carStatusEl) {
+          carStatusEl.textContent = '🛑 BRAKING!';
+          carStatusEl.style.color = '#e74c3c';
+        }
+        
+        // Visual feedback
+        brakeBtn.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+          brakeBtn.style.transform = 'scale(1)';
+          if (carStatusEl) {
+            carStatusEl.textContent = 'Stopped';
+            carStatusEl.style.color = '#2B3B53';
+          }
+        }, 300);
+
+        // Send stop command via postPress
+        try {
+          if (typeof postPressToServer === 'function') {
+            await postPressToServer('BRAKE');
+          }
+          console.log('Brake command sent');
+        } catch(err) {
+          console.warn('Brake command failed:', err);
+        }
+      });
+    }
 
     function sendGestureMessage(index) {
       if (index < 0 || index >= messages.length) return;
@@ -454,46 +867,140 @@
       const msg = messages[index];
       currentMessageEl.textContent = msg;
       // Optionally POST to server to notify (uncomment to enable):
-      // fetch(window.location.origin + '/press', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ button: msg }) });
+      // fetch(API_BASE + '/press', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ button: msg }) });
     }
 
     // Expose for external triggers (e.g., gestures mapped in code)
     window.sendGestureMessage = sendGestureMessage;
 
+    // Check URL on page load and show appropriate page
+    (function initializePageFromURL() {
+      const path = window.location.pathname;
+      console.log('[INIT] Current URL path:', path);
+      
+      // Hide all pages first
+      if (mainPage) mainPage.style.display = 'none';
+      if (musicPage) musicPage.style.display = 'none';
+      if (battlePage) battlePage.style.display = 'none';
+      if (gesturePage) gesturePage.style.display = 'none';
+      if (navPage) navPage.style.display = 'none';
+      
+      // Show page based on URL
+      if (path.includes('music')) {
+        console.log('[INIT] Showing Music Mode page');
+        if (musicPage) musicPage.style.display = 'flex';
+        window.history.replaceState({page: 'music'}, '', '/music_mode');
+        if (typeof postPressToServer === 'function') {
+          postPressToServer('Music Mode').catch(err => console.warn('Mode change error:', err));
+        }
+      } else if (path.includes('battle')) {
+        console.log('[INIT] Showing Battle Mode page');
+        if (battlePage) battlePage.style.display = 'flex';
+        window.history.replaceState({page: 'battle'}, '', '/battle_mode');
+        if (typeof postPressToServer === 'function') {
+          postPressToServer('Battle Mode').catch(err => console.warn('Mode change error:', err));
+        }
+      } else if (path.includes('gesture')) {
+        console.log('[INIT] Showing Gesture Mode page');
+        if (gesturePage) gesturePage.style.display = 'flex';
+        window.history.replaceState({page: 'gesture'}, '', '/gesture_mode');
+        if (typeof postPressToServer === 'function') {
+          postPressToServer('Gesture Mode').catch(err => console.warn('Mode change error:', err));
+        }
+      } else if (path.includes('navigation')) {
+        console.log('[INIT] Showing Navigation Mode page');
+        if (navPage) navPage.style.display = 'flex';
+        window.history.replaceState({page: 'navigation'}, '', '/navigation_mode');
+        if (typeof postPressToServer === 'function') {
+          postPressToServer('Navigation Mode').catch(err => console.warn('Mode change error:', err));
+        }
+      } else {
+        console.log('[INIT] Showing Main page');
+        if (mainPage) mainPage.style.display = 'flex';
+        window.history.replaceState({page: 'main'}, '', '/');
+        if (typeof postPressToServer === 'function') {
+          postPressToServer('Idle').catch(err => console.warn('Mode change error:', err));
+        }
+      }
+    })();
+
+    // Handle browser back/forward buttons
+    window.addEventListener('popstate', (event) => {
+      const page = event.state?.page || 'main';
+      console.log('[POPSTATE] Navigating to:', page);
+      
+      // Hide all pages
+      if (mainPage) mainPage.style.display = 'none';
+      if (musicPage) musicPage.style.display = 'none';
+      if (battlePage) battlePage.style.display = 'none';
+      if (gesturePage) gesturePage.style.display = 'none';
+      if (navPage) navPage.style.display = 'none';
+      
+      // Show the appropriate page and notify Pico
+      switch(page) {
+        case 'music':
+          if (musicPage) musicPage.style.display = 'flex';
+          if (typeof postPressToServer === 'function') {
+            postPressToServer('Music Mode').catch(err => console.warn('Mode change error:', err));
+          }
+          break;
+        case 'battle':
+          if (battlePage) battlePage.style.display = 'flex';
+          if (typeof postPressToServer === 'function') {
+            postPressToServer('Battle Mode').catch(err => console.warn('Mode change error:', err));
+          }
+          break;
+        case 'gesture':
+          if (gesturePage) gesturePage.style.display = 'flex';
+          if (typeof postPressToServer === 'function') {
+            postPressToServer('Gesture Mode').catch(err => console.warn('Mode change error:', err));
+          }
+          break;
+        case 'navigation':
+          if (navPage) navPage.style.display = 'flex';
+          if (typeof postPressToServer === 'function') {
+            postPressToServer('Navigation Mode').catch(err => console.warn('Mode change error:', err));
+          }
+          break;
+        default:
+          if (mainPage) mainPage.style.display = 'flex';
+          if (typeof postPressToServer === 'function') {
+            postPressToServer('Idle').catch(err => console.warn('Mode change error:', err));
+          }
+      }
+    });
+
     // POST button presses to the Pico HTTP server at /press
     (function(){
       const statusEl = document.getElementById('status');
-      const picoUrl = window.location.origin; // use current origin or set to 'http://<pico-ip>'
       
       async function postPress(label) {
+        console.log(`[POST REQUEST] Sending to server: ${API_BASE}/press`);
+        console.log(`[POST DATA] Button label: "${label}"`);
         try {
-          const resp = await fetch(picoUrl + '/press', {
+          const resp = await fetch(API_BASE + '/press', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ button: label })
           });
           const data = await resp.json();
+          console.log('[SERVER RESPONSE]', data);
           if (resp.ok && data.status === 'ok') {
-            statusEl.textContent = `Pressed: ${data.pressed} (Mode: ${data.mode})`;
+            if (statusEl) statusEl.textContent = `Mode: ${data.mode}`;
+            console.log(`[MODE CONFIRMED] Server confirmed mode: ${data.mode}`);
           } else {
-            statusEl.textContent = `Error: ${data.message || 'server error'}`;
+            if (statusEl) statusEl.textContent = `Error: ${data.message || 'server error'}`;
+            console.error('[SERVER ERROR]', data);
           }
         } catch (err) {
-          statusEl.textContent = 'Network error';
-          console.error(err);
+          if (statusEl) statusEl.textContent = 'Network error';
+          console.error('[NETWORK ERROR] Failed to contact server:', err);
         }
       }
       
-      document.querySelectorAll('.btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          const label = btn.textContent.trim() || btn.getAttribute('aria-label') || 'Unnamed button';
-          statusEl.textContent = `Pressed: ${label}...`;
-          // small visual feedback
-          btn.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.98)' }, { transform: 'scale(1)' }], { duration: 180, easing: 'ease-out' });
-          await postPress(label);
-        });
-      });
+      // Expose postPress globally for mode buttons
+      window.postPressToServer = postPress;
+      
       // Sensor polling and UI
       function drawBars(canvas, values, scale) {
         const ctx = canvas.getContext('2d');
@@ -525,93 +1032,436 @@
 
       async function fetchSensors() {
         try {
-          const resp = await fetch('/sensors');
+          const resp = await Promise.race([
+            fetch(API_BASE + '/sensors'),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+          ]);
+          
           if (!resp.ok) throw new Error('network');
           const data = await resp.json();
-          // Update connection status
-          document.getElementById('connection-status').textContent = '🟢 Connected';
-          document.getElementById('connection-status').style.color = '#2b8aef';
+          
+          // Update connection health
+          lastSuccessfulConnection = Date.now();
+          consecutiveFailures = 0;
+          isConnected = true;
+          
+          // Log connection status
+          console.log('[CONNECTION] ✓ Web app connected to Pi Pico at', PICO_IP);
+          
+          // Update connection status with prominent visual feedback
+          const connectionStatus = document.getElementById('connection-status');
+          connectionStatus.textContent = '🟢 Connected';
+          connectionStatus.style.color = '#2ecc71';
+          connectionStatus.style.fontWeight = 'bold';
+          
+          // Update connection banner with pulse animation
+          const connectionBanner = document.getElementById('connection-banner');
+          if (connectionBanner) {
+            connectionBanner.textContent = '✅ Connected to Pi Pico at ' + PICO_IP;
+            connectionBanner.style.background = 'rgba(46,204,113,0.2)';
+            connectionBanner.style.color = '#27ae60';
+            connectionBanner.classList.add('connected-pulse');
+          }
+          
+          // Connection hint removed - using simplified UI
           
           // update current mode display if present
           if (data.mode !== undefined) {
-            document.getElementById('mode-text').textContent = data.mode;
-            // only update the main status if it doesn't currently show a recent press
-            if (!statusEl.textContent.startsWith('Pressed:')) {
-              statusEl.textContent = `Mode: ${data.mode}`;
-            }
+            const modeText = document.getElementById('mode-text');
+            const stateMode = document.getElementById('state-mode');
+            if (modeText) modeText.textContent = data.mode;
+            if (stateMode) stateMode.textContent = data.mode;
+            setPageId(data.mode);
+            if (statusEl) statusEl.textContent = `Mode: ${data.mode}`;
           }
           // update connected clients display
           if (data.client_count !== undefined) {
-            document.getElementById('client-count').textContent = String(data.client_count);
+            const clientCount = document.getElementById('client-count');
+            const stateClients = document.getElementById('state-clients');
+            if (clientCount) clientCount.textContent = String(data.client_count);
+            if (stateClients) stateClients.textContent = String(data.client_count);
           } else if (data.clients !== undefined) {
-            document.getElementById('client-count').textContent = String(data.clients.length);
+            const clientCount = document.getElementById('client-count');
+            const stateClients = document.getElementById('state-clients');
+            if (clientCount) clientCount.textContent = String(data.clients.length);
+            if (stateClients) stateClients.textContent = String(data.clients.length);
           }
-          // Update both gyroscope displays
-          const gyro1 = data.imu1.gyro;
-          const accel1 = data.imu1.accel;
-          document.getElementById('gyro1-x').textContent = gyro1.x.toFixed(2);
-          document.getElementById('gyro1-y').textContent = gyro1.y.toFixed(2);
-          document.getElementById('gyro1-z').textContent = gyro1.z.toFixed(2);
-          document.getElementById('accel1-x').textContent = accel1.x.toFixed(2);
-          document.getElementById('accel1-y').textContent = accel1.y.toFixed(2);
-          document.getElementById('accel1-z').textContent = accel1.z.toFixed(2);
           
-          const gyro2 = data.imu2.gyro;
-          const accel2 = data.imu2.accel;
-          document.getElementById('gyro2-x').textContent = gyro2.x.toFixed(2);
-          document.getElementById('gyro2-y').textContent = gyro2.y.toFixed(2);
-          document.getElementById('gyro2-z').textContent = gyro2.z.toFixed(2);
-          document.getElementById('accel2-x').textContent = accel2.x.toFixed(2);
-          document.getElementById('accel2-y').textContent = accel2.y.toFixed(2);
-          document.getElementById('accel2-z').textContent = accel2.z.toFixed(2);
-          
-          // Update gyroscope displays on Music Mode page
-          document.getElementById('music-gyro1-x').textContent = gyro1.x.toFixed(2);
-          document.getElementById('music-gyro1-y').textContent = gyro1.y.toFixed(2);
-          document.getElementById('music-gyro1-z').textContent = gyro1.z.toFixed(2);
-          document.getElementById('music-accel1-x').textContent = accel1.x.toFixed(2);
-          document.getElementById('music-accel1-y').textContent = accel1.y.toFixed(2);
-          document.getElementById('music-accel1-z').textContent = accel1.z.toFixed(2);
-          
-          document.getElementById('music-gyro2-x').textContent = gyro2.x.toFixed(2);
-          document.getElementById('music-gyro2-y').textContent = gyro2.y.toFixed(2);
-          document.getElementById('music-gyro2-z').textContent = gyro2.z.toFixed(2);
-          document.getElementById('music-accel2-x').textContent = accel2.x.toFixed(2);
-          document.getElementById('music-accel2-y').textContent = accel2.y.toFixed(2);
-          document.getElementById('music-accel2-z').textContent = accel2.z.toFixed(2);
-
-          // Update gyroscope displays on Battle Mode page
-          if (document.getElementById('battle-gyro1-x')) {
-            document.getElementById('battle-gyro1-x').textContent = gyro1.x.toFixed(2);
-            document.getElementById('battle-gyro1-y').textContent = gyro1.y.toFixed(2);
-            document.getElementById('battle-gyro1-z').textContent = gyro1.z.toFixed(2);
-            document.getElementById('battle-gyro2-x').textContent = gyro2.x.toFixed(2);
-            document.getElementById('battle-gyro2-y').textContent = gyro2.y.toFixed(2);
-            document.getElementById('battle-gyro2-z').textContent = gyro2.z.toFixed(2);
+          // Display finger rotation states
+          if (data.finger1 && data.finger2) {
+            if (statusEl) statusEl.textContent = `Mode: ${data.mode} | Finger1: ${data.finger1} | Finger2: ${data.finger2}`;
           }
-
-          // Update gyroscope displays on Gesture Mode page
-          if (document.getElementById('gesture-gyro1-x')) {
-            document.getElementById('gesture-gyro1-x').textContent = gyro1.x.toFixed(2);
-            document.getElementById('gesture-gyro1-y').textContent = gyro1.y.toFixed(2);
-            document.getElementById('gesture-gyro1-z').textContent = gyro1.z.toFixed(2);
-            document.getElementById('gesture-gyro2-x').textContent = gyro2.x.toFixed(2);
-            document.getElementById('gesture-gyro2-y').textContent = gyro2.y.toFixed(2);
-            document.getElementById('gesture-gyro2-z').textContent = gyro2.z.toFixed(2);
-          }
+          
         } catch (e) {
-          // Show connection error
-          document.getElementById('connection-status').textContent = '🔴 Disconnected';
-          document.getElementById('connection-status').style.color = '#ef6b6b';
-          //console.warn('sensors', e);
+          consecutiveFailures++;
+          isConnected = false;
+          
+          // Log connection failure
+          console.warn('[CONNECTION] ✗ Lost connection to Pi Pico (failures:', consecutiveFailures + ')');
+          
+          // Show connection error with prominent warning
+          const connectionStatus = document.getElementById('connection-status');
+          connectionStatus.textContent = '🔴 Disconnected';
+          connectionStatus.style.color = '#ef6b6b';
+          connectionStatus.style.fontWeight = 'bold';
+          
+          // Update connection banner - remove pulse and show error
+          const connectionBanner = document.getElementById('connection-banner');
+          if (connectionBanner) {
+            connectionBanner.classList.remove('connected-pulse');
+            if (consecutiveFailures < 3) {
+              connectionBanner.textContent = '⚠️ Connection interrupted - Retrying...';
+              connectionBanner.style.background = 'rgba(243,156,18,0.2)';
+              connectionBanner.style.color = '#f39c12';
+            } else {
+              connectionBanner.textContent = '❌ Cannot reach Pi Pico';
+              connectionBanner.style.background = 'rgba(239,107,107,0.2)';
+              connectionBanner.style.color = '#e74c3c';
+            }
+          }
+          
+          // Auto-retry on connection loss
+          
+          // Attempt reconnection if too many failures
+          if (consecutiveFailures >= 5) {
+            console.warn('[SENSORS] Multiple failures, attempting reconnect...');
+            connectionAttempts = 0;
+            connectionRetryDelay = 2000;
+            initializeConnection(true);
+          }
         }
       }
 
-      // Start polling sensors at ~5Hz
-      setInterval(fetchSensors, 200);
-      // fetch once immediately
-      fetchSensors();
+      async function fetchSystemState() {
+        try {
+          const resp = await Promise.race([
+            fetch(API_BASE + '/state'),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+          ]);
+          
+          if (!resp.ok) throw new Error('network');
+          const state = await resp.json();
+          
+          // Update connection health
+          lastSuccessfulConnection = Date.now();
+          consecutiveFailures = 0;
+          isConnected = true;
+          
+          // Log system state update
+          console.log('[CONNECTION] ✓ System state updated | Power:', state.power, '| Mode:', state.mode, '| Devices:', state.devices_connected ? 'Connected' : 'Disconnected');
+          
+          // Update system state display (all instances using class selectors)
+          const deviceStatus = state.devices_connected ? '✅ Connected' : '❌ Not Connected';
+          const deviceColor = state.devices_connected ? '#2ecc71' : '#e74c3c';
+          
+          document.querySelectorAll('.state-power').forEach(el => {
+            el.textContent = state.power || 'OFF';
+            el.style.color = state.power === 'ON' ? '#2ecc71' : '#e74c3c';
+          });
+          document.getElementById('state-power').textContent = state.power || 'OFF';
+          document.getElementById('state-power').style.color = state.power === 'ON' ? '#2ecc71' : '#e74c3c';
+          
+          // Store power state globally for polling control
+          window.systemPowerOn = state.power === 'ON';
+          
+          document.querySelectorAll('.state-mode').forEach(el => {
+            el.textContent = state.mode || 'idle';
+          });
+          document.getElementById('state-mode').textContent = state.mode || 'idle';
+          
+          // Auto-change page based on current mode
+          if (state.mode && state.power === 'ON') {
+            const modeLower = state.mode.toLowerCase();
+            if (modeLower.includes('music') && mainPage.style.display !== 'none') {
+              mainPage.style.display = 'none';
+              musicPage.style.display = 'flex';
+            } else if (modeLower.includes('battle') && mainPage.style.display !== 'none') {
+              mainPage.style.display = 'none';
+              battlePage.style.display = 'flex';
+            } else if (modeLower.includes('gesture') && mainPage.style.display !== 'none') {
+              mainPage.style.display = 'none';
+              gesturePage.style.display = 'flex';
+            } else if (modeLower === 'idle' && mainPage.style.display === 'none') {
+              // Return to main page if mode is idle
+              musicPage.style.display = 'none';
+              battlePage.style.display = 'none';
+              gesturePage.style.display = 'none';
+              mainPage.style.display = 'flex';
+            }
+          }
+          
+          document.querySelectorAll('.state-devices').forEach(el => {
+            el.textContent = deviceStatus;
+            el.style.color = deviceColor;
+          });
+          const stateDevicesEl = document.getElementById('state-devices');
+          if (stateDevicesEl) {
+            stateDevicesEl.textContent = deviceStatus;
+            stateDevicesEl.style.color = deviceColor;
+          }
+          
+          document.querySelectorAll('.state-network').forEach(el => {
+            el.textContent = state.network || 'Unknown';
+            el.style.color = state.network && state.network.startsWith('Connected') ? '#2ecc71' : '#e74c3c';
+          });
+          document.getElementById('state-network').textContent = state.network || 'Unknown';
+          document.getElementById('state-network').style.color = state.network && state.network.startsWith('Connected') ? '#2ecc71' : '#e74c3c';
+          
+          document.querySelectorAll('.state-clients').forEach(el => {
+            el.textContent = String(state.clients || 0);
+          });
+          document.getElementById('state-clients').textContent = String(state.clients || 0);
+          
+          document.querySelectorAll('.state-song').forEach(el => {
+            el.textContent = state.song || 'None';
+            el.style.color = state.song && state.song !== 'None' ? '#2b8aef' : '#95a5a6';
+          });
+          document.getElementById('state-song').textContent = state.song || 'None';
+          document.getElementById('state-song').style.color = state.song && state.song !== 'None' ? '#2b8aef' : '#95a5a6';
+          
+        } catch (e) {
+          isConnected = false;
+          consecutiveFailures++;
+          
+          // Log state fetch failure
+          console.warn('[CONNECTION] ✗ Failed to fetch system state (failures:', consecutiveFailures + ')');
+          
+          // Attempt reconnection if too many failures
+          if (consecutiveFailures >= 5) {
+            console.warn('[STATE] Multiple failures, attempting reconnect...');
+            connectionAttempts = 0;
+            connectionRetryDelay = 2000;
+            initializeConnection(true);
+          }
+        }
+      }
+
+      // Initialize system power state tracking
+      window.systemPowerOn = false;
+      
+      // Update connection status UI across all pages
+      function updateConnectionStatus(status, message, details = '') {
+        const banner = document.getElementById('connection-banner');
+        const detailsEl = document.getElementById('connection-details');
+        const statusElements = document.querySelectorAll('#connection-status');
+        
+        if (banner) {
+          switch(status) {
+            case 'connected':
+              banner.textContent = '✅ Connected to Pi Pico';
+              banner.style.background = 'rgba(46,204,113,0.2)';
+              banner.style.color = '#27ae60';
+              break;
+            case 'connecting':
+              banner.textContent = '🔄 ' + message;
+              banner.style.background = 'rgba(52,152,219,0.2)';
+              banner.style.color = '#3498db';
+              break;
+            case 'disconnected':
+              banner.textContent = '❌ ' + message;
+              banner.style.background = 'rgba(231,76,60,0.2)';
+              banner.style.color = '#e74c3c';
+              break;
+            case 'warning':
+              banner.textContent = '⚠️ ' + message;
+              banner.style.background = 'rgba(243,156,18,0.2)';
+              banner.style.color = '#f39c12';
+              break;
+          }
+        }
+        
+        if (detailsEl) {
+          detailsEl.textContent = details || (PICO_IP ? 'IP: ' + PICO_IP : 'No IP configured');
+        }
+        
+        // Update all status indicators
+        statusElements.forEach(el => {
+          if (status === 'connected') {
+            el.innerHTML = '🟢 Connected';
+            el.style.color = '#27ae60';
+          } else if (status === 'connecting') {
+            el.innerHTML = '🟡 Connecting...';
+            el.style.color = '#f39c12';
+          } else {
+            el.innerHTML = '🔴 Disconnected';
+            el.style.color = '#e74c3c';
+          }
+        });
+      }
+      
+      // Connection health tracking
+      let connectionAttempts = 0;
+      let maxConnectionAttempts = 999; // Essentially unlimited retries
+      let connectionRetryDelay = 2000; // Start with 2 seconds
+      let consecutiveFailures = 0;
+      let lastSuccessfulConnection = Date.now();
+      let connectionHealthInterval = null;
+      let isConnected = false;
+      
+      // Connection initialization function with retry logic
+      async function initializeConnection(isRetry = false) {
+        connectionAttempts++;
+        
+        if (isRetry) {
+          console.log(`[CONNECTION] Retry attempt ${connectionAttempts}`);
+        } else {
+          console.log('[CONNECTION] Initializing connection to Pico...');
+          console.log('[CONNECTION] Target IP:', PICO_IP);
+          console.log('[CONNECTION] API Base:', API_BASE);
+        }
+        
+        // Show connecting status
+        document.getElementById('connection-status').textContent = '🟡 Connecting...';
+        document.getElementById('connection-status').style.color = '#f39c12';
+        
+        // Update banner to show connecting state
+        const connectionBanner = document.getElementById('connection-banner');
+        if (connectionBanner) {
+          connectionBanner.textContent = '🔄 Connecting to ' + PICO_IP + '...';
+          connectionBanner.style.background = 'rgba(52,152,219,0.2)';
+          connectionBanner.style.color = '#3498db';
+          connectionBanner.classList.remove('connected-pulse');
+        }
+        
+        // Test initial connection with timeout
+        try {
+          console.log('[CONNECTION] Testing connection to:', API_BASE + '/sensors');
+          const testResp = await Promise.race([
+            fetch(API_BASE + '/sensors', { 
+              cache: 'no-cache'
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+          ]);
+          console.log('[CONNECTION] Response received, status:', testResp.status);
+          
+          if (testResp.ok) {
+            console.log('[CONNECTION] ✓ Successfully connected to Pico');
+            console.log('[CONNECTION] Connected to:', PICO_IP);
+            document.getElementById('connection-status').textContent = '🟢 Connected to ' + PICO_IP;
+            document.getElementById('connection-status').style.color = '#2ecc71';
+            
+            // Update connection banner with pulse
+            const connectionBanner = document.getElementById('connection-banner');
+            if (connectionBanner) {
+              connectionBanner.textContent = '✅ Connected to Pi Pico at ' + PICO_IP;
+              connectionBanner.style.background = 'rgba(46,204,113,0.2)';
+              connectionBanner.style.color = '#27ae60';
+              connectionBanner.classList.add('connected-pulse');
+            }
+            
+            // Connection successful - live updates active
+            
+            // Reset connection tracking on success
+            connectionAttempts = 0;
+            consecutiveFailures = 0;
+            lastSuccessfulConnection = Date.now();
+            connectionRetryDelay = 2000;
+            isConnected = true;
+            
+            // Start polling
+            startPolling();
+            
+            // Immediately fetch system state to populate device status
+            fetchSystemState();
+            
+            // Start connection health monitoring
+            startConnectionHealthMonitor();
+            
+            return true;
+          }
+        } catch (error) {
+          console.warn('[CONNECTION] Failed to connect:', error.message);
+          console.warn('[CONNECTION] Make sure:', 
+            '\n1. Pico is powered ON and WiFi connected',
+            '\n2. Your device is on the same network (THIRDEARTH)',
+            '\n3. Pico IP address is correct:', PICO_IP,
+            '\n4. Check Pico console for its IP address');
+          consecutiveFailures++;
+          isConnected = false;
+          
+          console.warn('[CONNECTION] Cannot reach Pico. Make sure Pico is ON and connected to WiFi (THIRDEARTH)');
+          
+          // Update connection banner
+          const connectionBanner = document.getElementById('connection-banner');
+          if (connectionBanner) {
+            connectionBanner.textContent = '❌ Cannot connect to Pi Pico - Retrying...';
+            connectionBanner.style.background = 'rgba(239,107,107,0.2)';
+            connectionBanner.style.color = '#e74c3c';
+          }
+          
+          // Always retry with exponential backoff
+          document.getElementById('connection-status').textContent = `⚪ Retrying in ${connectionRetryDelay/1000}s... (${consecutiveFailures})`;
+          document.getElementById('connection-status').style.color = '#f39c12';
+          
+          // Exponential backoff (max 10 seconds)
+          setTimeout(() => {
+            initializeConnection(true);
+          }, connectionRetryDelay);
+          
+          connectionRetryDelay = Math.min(connectionRetryDelay * 1.5, 10000);
+          
+          return false;
+        }
+      }
+      
+      // Start polling functions
+      function startPolling() {
+        // Clear any existing intervals
+        if (window.sensorInterval) clearInterval(window.sensorInterval);
+        if (window.stateInterval) clearInterval(window.stateInterval);
+        
+        // Start polling sensors at ~5Hz for real-time updates
+        window.sensorInterval = setInterval(fetchSensors, 200);
+        
+        // Poll system state every 1 second for constant connection monitoring
+        window.stateInterval = setInterval(fetchSystemState, 1000);
+        
+        console.log('[POLLING] Started polling - Sensors: 200ms, State: 1000ms');
+      }
+      
+      // Monitor connection health and reconnect if needed
+      function startConnectionHealthMonitor() {
+        if (connectionHealthInterval) {
+          clearInterval(connectionHealthInterval);
+        }
+        
+        connectionHealthInterval = setInterval(() => {
+          const timeSinceLastSuccess = Date.now() - lastSuccessfulConnection;
+          
+          // If no successful connection in 10 seconds and multiple failures, attempt reconnect
+          if (timeSinceLastSuccess > 10000 && consecutiveFailures > 3 && !isConnected) {
+            console.warn('[HEALTH] Connection appears unhealthy, reconnecting...');
+            document.getElementById('connection-status').textContent = '🟡 Reconnecting...';
+            document.getElementById('connection-status').style.color = '#f39c12';
+            
+            // Reset and reconnect
+            connectionAttempts = 0;
+            connectionRetryDelay = 2000;
+            initializeConnection(true);
+          }
+        }, 3000); // Check every 3 seconds
+      }
+      
+      // Auto-initialize connection immediately
+      initializeConnection();
+
+      // Volume control
+      let masterVolume = 0.5; // default 50%
+      const volumeSlider = document.getElementById('volume-slider');
+      const volumeValue = document.getElementById('volume-value');
+      
+      if (volumeSlider && volumeValue) {
+        volumeSlider.addEventListener('input', (e) => {
+          const val = parseInt(e.target.value);
+          masterVolume = val / 100;
+          volumeValue.textContent = val + '%';
+          // Update slider background gradient
+          e.target.style.background = `linear-gradient(90deg, var(--accent) 0%, var(--accent) ${val}%, rgba(255,255,255,0.3) ${val}%, rgba(255,255,255,0.3) 100%)`;
+        });
+      }
     })();
   </script>
 </body>
 </html>
+
+
