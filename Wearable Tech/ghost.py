@@ -13,6 +13,11 @@ try:
 except:
     import json
 
+ssid = "THIRDEARTH"
+pw = "Mr.LamYo"
+#ssid = "BELL470"
+#pw = "911A9DEC7146"
+
 class MotorCar:
     """
     Robot car with dual motor control
@@ -205,7 +210,7 @@ def handle_car_command(car, command, speed=70):
         print(f"Unknown command: {command}")
 
 
-def setup_wifi_client(ssid="BELL470", password="911A9DEC7146"):
+def setup_wifi_client(ssid, password):
     """Connect to existing WiFi network to receive commands"""
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -225,17 +230,23 @@ def setup_wifi_client(ssid="BELL470", password="911A9DEC7146"):
     if wlan.isconnected():
         ip_info = wlan.ifconfig()
         print('\n' + '='*50)
-        print('Car WiFi Connected!')
+        print('🚗 GHOST CAR - NETWORK CONNECTED! ✓')
         print('='*50)
-        print(f'  Network: {ssid}')
-        print(f'  IP Address: {ip_info[0]}')
-        print(f'  Listening on port: 8080')
+        print(f'  Network SSID: {ssid}')
+        print(f'  🌐 IP Address: {ip_info[0]}')
+        print(f'  📡 Gateway: {ip_info[2]}')
+        print(f'  🔌 Port: 8080')
+        print(f'  ✅ Status: READY TO RECEIVE COMMANDS')
         print('='*50)
-        print(f'Set car_ip = \"{ip_info[0]}\" in main.py')
+        print(f'📝 Configuration:')
+        print(f'   Set car_ip = "{ip_info[0]}" in main.py')
         print('='*50 + '\n')
+        print('🎮 Waiting for gyroscope commands...')
+        print('   Ready to receive: forward, backward, left, right, stop\n')
         return wlan
     else:
-        print('Failed to connect to WiFi!')
+        print('❌ Failed to connect to WiFi!')
+        print('   Check SSID and password')
         return None
 
 
@@ -257,7 +268,13 @@ def run_car_server():
     s.listen(1)
     s.settimeout(0.1)  # Non-blocking
     
-    print('Listening for gyroscope commands on port 8080...\n')
+    print('\n' + '='*50)
+    print('🎯 SERVER STARTED - READY TO RECEIVE COMMANDS')
+    print('='*50)
+    print('📡 Listening on: 0.0.0.0:8080')
+    print('🔄 Server Mode: Non-blocking')
+    print('✅ Ghost car is ready for network control!')
+    print('='*50 + '\n')
     
     current_direction = 'stop'
     
@@ -277,10 +294,29 @@ def run_car_server():
                             direction = cmd.get('direction', 'stop')
                             speed = cmd.get('speed', 70)
                             
-                            print(f"Command: {direction} @ {speed}%")
+                            # Log received command with visual indicators
+                            print('\n' + '-'*50)
+                            print(f'📥 COMMAND RECEIVED from {addr[0]}')
+                            print(f'   Raw data: {data.decode("utf-8")}')
+                            print(f'   Direction: {direction.upper()}')
+                            print(f'   Speed: {speed}%')
                             
                             # Execute command
                             if direction != current_direction:
+                                # Map direction to emoji
+                                direction_emoji = {
+                                    'forward': '⬆️',
+                                    'backward': '⬇️',
+                                    'left': '⬅️',
+                                    'right': '➡️',
+                                    'spin_left': '↪️',
+                                    'spin_right': '↩️',
+                                    'stop': '🛑'
+                                }
+                                emoji = direction_emoji.get(direction, '🤖')
+                                
+                                print(f'🚗 EXECUTING: {emoji} {direction.upper()}')
+                                
                                 if direction == 'forward':
                                     car.forward(speed)
                                 elif direction == 'backward':
@@ -297,18 +333,26 @@ def run_car_server():
                                     car.stop()
                                 
                                 current_direction = direction
+                                print(f'✅ Command executed successfully')
+                            else:
+                                print(f'⚠️ Already executing: {direction}')
+                            
+                            print('-'*50 + '\n')
                             
                             # Send ACK
                             response = json.dumps({'status': 'ok', 'direction': direction})
                             conn.send(response.encode('utf-8'))
+                            print(f'📤 ACK sent to {addr[0]}')
                             
                         except Exception as e:
-                            print(f"Command error: {e}")
+                            print(f"❌ Command parsing error: {e}")
+                            print(f"   Raw data received: {data}")
                             
                 except Exception as e:
-                    print(f"Receive error: {e}")
+                    print(f"⚠️ Receive error: {e}")
                 finally:
                     conn.close()
+                    print(f'🔌 Connection closed with {addr[0]}\n')
                     
             except OSError:
                 # Timeout - no connection
