@@ -13,11 +13,6 @@ try:
 except:
     import json
 
-ssid = "THIRDEARTH"
-pw = "Mr.LamYo"
-#ssid = "BELL470"
-#pw = "911A9DEC7146"
-
 class MotorCar:
     """
     Robot car with dual motor control
@@ -210,15 +205,8 @@ def handle_car_command(car, command, speed=70):
         print(f"Unknown command: {command}")
 
 
-def setup_wifi_client(ssid="THIRDEARTH", password="Mr.LamYo"):
+def setup_wifi_client(ssid="BELL470", password="911A9DEC7146"):
     """Connect to existing WiFi network to receive commands"""
-    print('\n' + '='*50)
-    print('🚗 GHOST CAR INITIALIZATION')
-    print('='*50)
-    print(f'   Target Network: {ssid}')
-    print('   Connecting to WiFi...')
-    print('='*50 + '\n')
-    
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     
@@ -237,28 +225,22 @@ def setup_wifi_client(ssid="THIRDEARTH", password="Mr.LamYo"):
     if wlan.isconnected():
         ip_info = wlan.ifconfig()
         print('\n' + '='*50)
-        print('🚗 GHOST CAR - NETWORK CONNECTED! ✓')
+        print('Car WiFi Connected!')
         print('='*50)
-        print(f'  Network SSID: {ssid}')
-        print(f'  🌐 IP Address: {ip_info[0]}')
-        print(f'  📡 Gateway: {ip_info[2]}')
-        print(f'  🔌 Port: 8080')
-        print(f'  ✅ Status: READY TO RECEIVE COMMANDS')
+        print(f'  Network: {ssid}')
+        print(f'  IP Address: {ip_info[0]}')
+        print(f'  Listening on port: 8080')
         print('='*50)
-        print('📝 COPY THIS LINE TO main.py (around line 77):')
-        print(f'   car_ip = "{ip_info[0]}"')
+        print(f'Set car_ip = \"{ip_info[0]}\" in main.py')
         print('='*50 + '\n')
-        print('🎮 Waiting for gyroscope commands...')
-        print('   Ready to receive: forward, backward, left, right, stop\n')
         return wlan
     else:
-        print('❌ Failed to connect to WiFi!')
-        print('   Check SSID and password')
+        print('Failed to connect to WiFi!')
         return None
 
 
-def run_car_server():
-    """Main server loop - receives gyro commands and drives car"""
+def run_car_client(controller_ip):
+    """Main client loop - polls controller for commands and executes them"""
     car = MotorCar()
     
     # Connect to WiFi
@@ -267,115 +249,83 @@ def run_car_server():
         print("Cannot start without WiFi connection!")
         return
     
-    # Create socket server
-    addr = socket.getaddrinfo('0.0.0.0', 8080)[0][-1]
-    s = socket.socket()
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.bind(addr)
-    s.listen(1)
-    s.settimeout(0.1)  # Non-blocking
-    
     print('\n' + '='*50)
-    print('🎯 SERVER STARTED - READY TO RECEIVE COMMANDS')
+    print('🚗 GHOST CAR - CLIENT MODE')
     print('='*50)
-    print('📡 Listening on: 0.0.0.0:8080')
-    print('🔄 Server Mode: Non-blocking')
-    print('✅ Ghost car is ready for network control!')
+    print(f'   Polling controller at: {controller_ip}')
+    print(f'   Command endpoint: /car_command')
+    print(f'   Poll interval: 100ms')
     print('='*50 + '\n')
     
     current_direction = 'stop'
+    poll_url = f'http://{controller_ip}/car_command'
+    consecutive_failures = 0
     
     try:
         while True:
             try:
-                conn, addr = s.accept()
-                print(f'Connection from {addr}')
-                conn.settimeout(5.0)
-                
+                # Poll controller for command
                 try:
-                    data = conn.recv(1024)
-                    if data:
-                        try:
-                            # Parse JSON command
-                            cmd = json.loads(data.decode('utf-8'))
-                            direction = cmd.get('direction', 'stop')
-                            speed = cmd.get('speed', 70)
-                            
-                            # Log received command with visual indicators
-                            print('\n' + '-'*50)
-                            print(f'📥 COMMAND RECEIVED from {addr[0]}')
-                            print(f'   Raw data: {data.decode("utf-8")}')
-                            print(f'   Direction: {direction.upper()}')
-                            print(f'   Speed: {speed}%')
-                            
-                            # Execute command
-                            if direction != current_direction:
-                                # Map direction to emoji
-                                direction_emoji = {
-                                    'forward': '⬆️',
-                                    'backward': '⬇️',
-                                    'left': '⬅️',
-                                    'right': '➡️',
-                                    'spin_left': '↪️',
-                                    'spin_right': '↩️',
-                                    'stop': '🛑'
-                                }
-                                emoji = direction_emoji.get(direction, '🤖')
-                                
-                                print(f'🚗 EXECUTING: {emoji} {direction.upper()}')
-                                
-                                if direction == 'forward':
-                                    car.forward(speed)
-                                elif direction == 'backward':
-                                    car.backward(speed)
-                                elif direction == 'left':
-                                    car.turn_left(speed)
-                                elif direction == 'right':
-                                    car.turn_right(speed)
-                                elif direction == 'spin_left':
-                                    car.spin_left(speed)
-                                elif direction == 'spin_right':
-                                    car.spin_right(speed)
-                                else:
-                                    car.stop()
-                                
-                                current_direction = direction
-                                print(f'✅ Command executed successfully')
-                            else:
-                                print(f'⚠️ Already executing: {direction}')
-                            
-                            print('-'*50 + '\n')
-                            
-                            # Send ACK
-                            response = json.dumps({'status': 'ok', 'direction': direction})
-                            conn.send(response.encode('utf-8'))
-                            print(f'📤 ACK sent to {addr[0]}')
-                            
-                        except Exception as e:
-                            print(f"❌ Command parsing error: {e}")
-                            print(f"   Raw data received: {data}")
-                            
-                except Exception as e:
-                    print(f"⚠️ Receive error: {e}")
-                finally:
-                    conn.close()
-                    print(f'🔌 Connection closed with {addr[0]}\n')
+                    import urequests as requests
+                except:
+                    import requests
+                
+                response = requests.get(poll_url, timeout=2)
+                
+                if response.status_code == 200:
+                    cmd = response.json()
+                    direction = cmd.get('direction', 'stop')
+                    speed = cmd.get('speed', 70)
+                    response.close()
                     
-            except OSError:
-                # Timeout - no connection
-                pass
+                    # Reset failure counter on success
+                    if consecutive_failures > 0:
+                        print('[CONNECTION] ✅ Reconnected to controller')
+                    consecutive_failures = 0
+                    
+                    # Execute command if changed
+                    if direction != current_direction:
+                        print(f'[COMMAND] {direction.upper()} @ {speed}%')
+                        
+                        if direction == 'forward':
+                            car.forward(speed)
+                        elif direction == 'backward':
+                            car.backward(speed)
+                        elif direction == 'left':
+                            car.turn_left(speed)
+                        elif direction == 'right':
+                            car.turn_right(speed)
+                        elif direction == 'spin_left':
+                            car.spin_left(speed)
+                        elif direction == 'spin_right':
+                            car.spin_right(speed)
+                        else:
+                            car.stop()
+                        
+                        current_direction = direction
+                else:
+                    response.close()
+                    consecutive_failures += 1
+                    
+            except Exception as e:
+                consecutive_failures += 1
+                if consecutive_failures % 10 == 1:  # Print every 10 failures
+                    print(f'[CONNECTION] ⚠️ Failed to reach controller (failures: {consecutive_failures})')
             
-            sleep(0.01)
+            sleep(0.1)  # Poll every 100ms
             
     except KeyboardInterrupt:
         print("\nShutting down...")
     finally:
         car.cleanup()
-        s.close()
         wlan.active(False)
-        print("Car server stopped")
+        print("Ghost car stopped")
 
 
 if __name__ == "__main__":
-    # Run WiFi-controlled car server
-    run_car_server()
+    # CONFIGURATION: Set your controller Pico's IP address here
+    # Check main.py console output for "My Pico's IP address is: X.X.X.X"
+    CONTROLLER_IP = '192.168.99.38'  # Change this to your main.py Pico's IP
+    
+    # Run WiFi-controlled car client (polls controller for commands)
+    run_car_client(CONTROLLER_IP)
