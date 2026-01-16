@@ -1,1467 +1,565 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Wearable Control</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Robot Controller</title>
   <style>
-    :root{
-      --bg:#6F8FAF;
-      --btn-start:#FFFFFF;
-      --btn-end:#E5D9C7;
-      --accent:#2B3B53;
-      --shadow: rgba(11,22,40,0.2);
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
-    html,body{height:100%;margin:0;padding:0;font-family: "Segoe UI", Roboto, Arial, sans-serif;background:var(--bg);}
-
-    .page{
-      min-height:100%;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:flex-start;
-      gap:24px;
-      padding:40px 24px;
-      box-sizing:border-box;
-      color:var(--accent);
+    :root {
+      --bg: #6F8FAF;
+      --card-bg: rgba(255, 255, 255, 0.12);
+      --btn-light: #FFFFFF;
+      --btn-dark: #E5D9C7;
+      --text: #2B3B53;
+      --shadow: rgba(11, 22, 40, 0.2);
+      --green: #2ecc71;
+      --blue: #3498db;
+      --orange: #e67e22;
+      --red: #e74c3c;
+      --purple: #9b59b6;
+      --yellow: #f39c12;
     }
 
-    h1{
-      margin:0 0 16px;
-      font-weight:700;
-      font-size:32px;
-      background: linear-gradient(135deg, #FFFFFF 0%, var(--btn-end) 100%);
+    body {
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      gap: 20px;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      background: linear-gradient(135deg, #FFFFFF 0%, var(--btn-dark) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      letter-spacing: -0.5px;
+      text-align: center;
+      margin-bottom: 10px;
     }
 
-    h1::after{
-      content: '';
-      display: block;
-      height: 4px;
-      width: 80px;
-      margin: 12px auto 0;
-      background: linear-gradient(90deg, transparent, var(--btn-end), transparent);
-      border-radius: 2px;
-    }
-
-    /* status text */
-    .status{
-      font-size:14px;
-      padding:8px 14px;
-      border-radius:10px;
-      background: rgba(255,255,255,0.12);
+    .card {
+      background: var(--card-bg);
       backdrop-filter: blur(4px);
-      color:var(--accent);
-      min-width:260px;
-      text-align:center;
-      box-shadow: 0 4px 12px rgba(11,22,40,0.08);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 12px var(--shadow);
+      min-width: 300px;
+      max-width: 600px;
     }
 
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-      gap:18px;
-      width:100%;
-      max-width:720px;
-      align-items:center;
-      justify-items:center;
+    .card-title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 12px;
+      text-align: center;
     }
 
-    form{margin:0} /* keep forms if you submit to actions */
-
-    .btn{
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      height:120px;
-      width:120px;
-      border-radius:20px;
-      border:0;
-      padding:8px 12px;
-      background: linear-gradient(135deg, var(--btn-start) 0%, var(--btn-end) 100%);
-      color:var(--accent);
-      font-weight:700;
-      font-size:16px;
-      box-shadow: 0 8px 20px var(--shadow), inset 0 -3px rgba(0,0,0,0.04);
-      cursor:pointer;
-      transition: transform .14s cubic-bezier(.2,.8,.2,1), box-shadow .14s ease, filter .14s;
-      user-select:none;
+    .status-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 15px;
+      font-size: 13px;
     }
 
-    .btn:hover{ transform: translateY(-6px); box-shadow: 0 18px 36px rgba(11,22,40,0.25); filter:brightness(1.02) }
+    .status-label {
+      font-weight: 600;
+    }
 
-    .btn:active{ transform: translateY(-2px) scale(.995); box-shadow: 0 8px 18px rgba(11,22,40,0.18) }
+    .status-value {
+      font-weight: bold;
+    }
 
-    /* optional small labels under buttons */
-    .label{font-size:12px;opacity:0.9;margin-top:6px}
+    /* Controls Layout */
+    .controls-container {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
 
-    /* Connection pulse animation */
+    /* D-Pad */
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 70px);
+      grid-template-rows: repeat(3, 70px);
+      gap: 8px;
+    }
+
+    .dpad-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--btn-light), var(--btn-dark));
+      color: var(--text);
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 6px 16px var(--shadow);
+      transition: all 0.12s ease;
+      user-select: none;
+    }
+
+    .dpad-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 24px var(--shadow);
+    }
+
+    .dpad-btn:active {
+      transform: translateY(-1px) scale(0.96);
+    }
+
+    .dpad-up { grid-column: 2; grid-row: 1; }
+    .dpad-left { grid-column: 1; grid-row: 2; }
+    .dpad-center {
+      grid-column: 2;
+      grid-row: 2;
+      background: linear-gradient(135deg, #ef6b6b, #e74c3c);
+      font-size: 20px;
+      pointer-events: all;
+      cursor: pointer;
+    }
+    .dpad-right { grid-column: 3; grid-row: 2; }
+    .dpad-down { grid-column: 2; grid-row: 3; }
+
+    /* Attack Buttons */
+    .attack-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .attack-btn {
+      width: 100px;
+      height: 100px;
+      border: none;
+      border-radius: 20px;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 6px 16px var(--shadow);
+      transition: all 0.12s ease;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .attack-btn:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 18px 36px var(--shadow);
+    }
+
+    .attack-btn:active {
+      transform: translateY(-2px) scale(0.95);
+    }
+
+    .attack1 {
+      background: linear-gradient(135deg, #f39c12, #e67e22);
+      color: white;
+    }
+
+    .attack2 {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+    }
+
+    /* Movement Log */
+    .log-container {
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: monospace;
+      font-size: 11px;
+    }
+
+    .log-entry {
+      padding: 6px 10px;
+      margin: 4px 0;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .log-time {
+      opacity: 0.7;
+      font-size: 10px;
+    }
+
+    /* Animations */
     @keyframes pulse {
-      0% { opacity: 1; transform: scale(1); }
+      0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.7; transform: scale(1.05); }
-      100% { opacity: 1; transform: scale(1); }
     }
-    
-    .connected-pulse {
+
+    .pulse {
       animation: pulse 2s ease-in-out infinite;
     }
-    
-    /* Smooth transitions for connection states */
-    #connection-banner, #connection-status {
-      transition: all 0.3s ease;
+
+    @keyframes flash {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
     }
 
-    /* responsive tweaks */
-    @media (max-width:420px){
-      .btn{height:88px;width:88px;font-size:14px;border-radius:14px}
-      .grid{gap:12px}
-      h1{font-size:24px}
+    .flash {
+      animation: flash 0.5s ease;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      h1 { font-size: 24px; }
+      .dpad {
+        grid-template-columns: repeat(3, 50px);
+        grid-template-rows: repeat(3, 50px);
+        gap: 5px;
+      }
+      .dpad-btn { font-size: 20px; }
+      .attack-btn { width: 80px; height: 80px; font-size: 16px; }
+      .controls-container { gap: 20px; }
     }
   </style>
 </head>
 <body>
-  <!-- Main Control Page -->
-  <div id="main-page" class="page">
-    <h1>Wearable Control</h1>
+  <h1>🚗 Robot Controller</h1>
 
-    <!-- Connection Status -->
-    <div id="connection-banner" class="status" style="background:rgba(52,152,219,0.15);border-left:4px solid #3498db;text-align:center;min-width:350px;max-width:600px;padding:20px;font-size:18px;font-weight:bold;">
-      ⚪ Connecting to Pi Pico...
-    </div>
-
-    <!-- System State Dashboard -->
-    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
-      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
-        <span style="font-weight:600;">Power:</span>
-        <span id="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
-        
-        <span style="font-weight:600;">Mode:</span>
-        <span id="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
-        
-        <span style="font-weight:600;">Devices:</span>
-        <span id="state-devices" style="font-weight:bold;">Unknown</span>
-        
-        <span style="font-weight:600;">Network:</span>
-        <span id="state-network" style="font-weight:bold;">Checking...</span>
-        
-        <span style="font-weight:600;">Web Clients:</span>
-        <span id="state-clients" style="font-weight:bold;">0</span>
-        
-        <span style="font-weight:600;">Current Song:</span>
-        <span id="state-song" style="font-weight:bold;">None</span>
-      </div>
-    </div>
-
-    <!-- Mode and connection status -->
-    <div id="mode-display" class="status" role="status" style="font-weight:bold;font-size:16px;min-width:300px;">Mode: <span id="mode-text">idle</span> | <span id="connection-status" style="color:#95a5a6;">⚪ Connecting...</span></div>
-
-    <div id="client-display" class="status" style="font-size:13px;min-width:220px;background:rgba(46,204,113,0.1);">
-      <span style="font-weight:600;">Web Clients Connected:</span> <span id="client-count" style="font-weight:bold;color:#27ae60;">0</span>
-    </div>
-
-    <div class="grid">
-      <button class="btn" type="button" id="music-btn">Music Mode</button>
-      <button class="btn" type="button" id="battle-btn">Battle Mode</button>
-      <button class="btn" type="button" id="gesture-btn">Gesture Mode</button>
-      <button class="btn" type="button" id="nav-btn">Navigation Mode</button>
-    </div>
-
-
+  <!-- Connection Status -->
+  <div class="card" id="connection-card" style="background: rgba(52,152,219,0.15); border-left: 4px solid var(--blue);">
+    <div class="card-title" id="connection-status">⚪ Connecting...</div>
   </div>
 
-  <!-- Music Mode Page -->
-  <div id="music-page" class="page" style="display:none;">
-    <button class="btn" type="button" id="back-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
-    
-    <h1 style="margin-top:40px;">🎵 Music Mode</h1>
-
-    <!-- System State Dashboard -->
-    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
-      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
-        <span style="font-weight:600;">Power:</span>
-        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
-        
-        <span style="font-weight:600;">Mode:</span>
-        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
-        
-        <span style="font-weight:600;">Devices:</span>
-        <span class="state-devices" style="font-weight:bold;">Unknown</span>
-        
-        <span style="font-weight:600;">Network:</span>
-        <span class="state-network" style="font-weight:bold;">Checking...</span>
-        
-        <span style="font-weight:600;">Web Clients:</span>
-        <span class="state-clients" style="font-weight:bold;">0</span>
-        
-        <span style="font-weight:600;">Current Song:</span>
-        <span class="state-song" style="font-weight:bold;">None</span>
-      </div>
-    </div>
-
-    <div id="song-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
-      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Now Playing</div>
-      <div id="current-song" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Waiting for song...</div>
-      <div style="font-size:12px;opacity:0.7;">Interact with your finger to change songs</div>
-    </div>
-
-    <!-- Volume Control -->
-    <div class="status" style="min-width:300px;max-width:600px;padding:16px;">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span style="font-size:18px;">🔊</span>
-        <div style="flex:1;">
-          <div style="display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px;">
-            <span>Volume</span>
-            <span id="volume-value">50%</span>
-          </div>
-          <input type="range" id="volume-slider" min="0" max="100" value="50" style="width:100%;height:6px;border-radius:3px;background:linear-gradient(90deg, var(--accent) 0%, var(--accent) 50%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.3) 100%);outline:none;-webkit-appearance:none;appearance:none;cursor:pointer;" />
-        </div>
-      </div>
-    </div>
-
-    <div id="sequence-display" class="status" style="background:rgba(43,138,239,0.12);border-left:4px solid #2b8aef;text-align:left;min-width:300px;max-width:600px;padding:16px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;">
-      <div>
-        <div style="font-size:14px;font-weight:bold;margin-bottom:6px;">Sequence</div>
-        <div id="sequence-text" style="font-size:12px;opacity:0.85;">No sequence yet</div>
-      </div>
-      <button class="btn" type="button" id="sequence-reset" style="height:46px;width:140px;border-radius:14px;font-size:14px;">Reset Sequence</button>
-    </div>
-
-
-
-    <!-- Example songs playlist -->
-    <div id="playlist" style="width:100%;max-width:600px;margin-top:20px;">
-      <h2 style="text-align:center;margin-bottom:15px;font-size:18px;">📜 Song Selection</h2>
-      <div style="display:grid;gap:12px;">
-        <button class="btn song-btn" data-song="Moonlight Sonata" data-url="https://www.youtube.com/watch?v=4Tr0otuiQuU" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
-          <div style="font-size:15px;font-weight:bold;">🎹 1. Moonlight Sonata</div>
-          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Classical - Ludwig van Beethoven</div>
-          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 5:28 | Tempo: Adagio sostenuto</div>
-        </button>
-        <button class="btn song-btn" data-song="Bohemian Rhapsody" data-url="https://www.youtube.com/watch?v=fJ9rUzIMcZQ" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
-          <div style="font-size:15px;font-weight:bold;">🎸 2. Bohemian Rhapsody</div>
-          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Rock - Queen</div>
-          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 5:55 | Tempo: Rock Ballad</div>
-        </button>
-        <button class="btn song-btn" data-song="Levitating" data-url="https://www.youtube.com/watch?v=TUVcZfQe-Kw" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
-          <div style="font-size:15px;font-weight:bold;">✨ 3. Levitating</div>
-          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Pop - Dua Lipa</div>
-          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 3:23 | Tempo: 103 BPM</div>
-        </button>
-        <button class="btn song-btn" data-song="Blinding Lights" data-url="https://www.youtube.com/watch?v=4NRXx6U8ABQ" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
-          <div style="font-size:15px;font-weight:bold;">💫 4. Blinding Lights</div>
-          <div style="font-size:12px;opacity:0.85;font-weight:normal;">Synthwave - The Weeknd</div>
-          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 3:20 | Tempo: 87 BPM</div>
-        </button>
-        <button class="btn song-btn" data-song="Wake Me Up" data-url="https://www.youtube.com/watch?v=IcrbM1l_BoI" style="height:auto;width:100%;padding:15px;text-align:left;display:flex;flex-direction:column;gap:5px;border-radius:12px;">
-          <div style="font-size:15px;font-weight:bold;">🎧 5. Wake Me Up</div>
-          <div style="font-size:12px;opacity:0.85;font-weight:normal;">EDM - Avicii</div>
-          <div style="font-size:11px;opacity:0.7;font-weight:normal;">Duration: 4:09 | Tempo: 120 BPM</div>
-        </button>
-      </div>
+  <!-- System State -->
+  <div class="card" style="background: rgba(43,138,239,0.15); border-left: 4px solid var(--blue);">
+    <div class="card-title">🖥️ SYSTEM STATE</div>
+    <div class="status-grid">
+      <span class="status-label">Power:</span>
+      <span class="status-value" id="power">OFF</span>
+      <span class="status-label">Devices:</span>
+      <span class="status-value" id="devices">Unknown</span>
+      <span class="status-label">Network:</span>
+      <span class="status-value" id="network">Checking...</span>
+      <span class="status-label">Clients:</span>
+      <span class="status-value" id="clients">0</span>
     </div>
   </div>
 
-  <!-- Battle Mode Page -->
-  <div id="battle-page" class="page" style="display:none;">
-    <button class="btn" type="button" id="back-battle-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
-    <h1 style="margin-top:40px;">⚔️ Battle Mode</h1>
-
-    <!-- System State Dashboard -->
-    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
-      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
-        <span style="font-weight:600;">Power:</span>
-        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
-        
-        <span style="font-weight:600;">Mode:</span>
-        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
-        
-        <span style="font-weight:600;">Devices:</span>
-        <span class="state-devices" style="font-weight:bold;">Unknown</span>
-        
-        <span style="font-weight:600;">Network:</span>
-        <span class="state-network" style="font-weight:bold;">Checking...</span>
-        
-        <span style="font-weight:600;">Web Clients:</span>
-        <span class="state-clients" style="font-weight:bold;">0</span>
-        
-        <span style="font-weight:600;">Current Song:</span>
-        <span class="state-song" style="font-weight:bold;">None</span>
-      </div>
-    </div>
-
-    <div id="move-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
-      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Current Move</div>
-      <div id="current-move" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Waiting for move...</div>
-      <div style="font-size:12px;opacity:0.7;">Use gestures to trigger moves</div>
-    </div>
-
-
+  <!-- Car Status -->
+  <div class="card" style="background: rgba(46,204,113,0.15); border-left: 4px solid var(--green);">
+    <div class="card-title">Car Status</div>
+    <div style="font-size: 24px; font-weight: bold; text-align: center; margin: 10px 0;" id="car-status">Ready</div>
+    <div style="font-size: 12px; text-align: center; opacity: 0.7;">Tilt to control or use buttons</div>
   </div>
 
-  <!-- Gesture Mode Page -->
-  <div id="gesture-page" class="page" style="display:none;">
-    <button class="btn" type="button" id="back-gesture-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
-    <h1 style="margin-top:40px;">🤟 Gesture Mode</h1>
-
-    <!-- System State Dashboard -->
-    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
-      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
-        <span style="font-weight:600;">Power:</span>
-        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
-        
-        <span style="font-weight:600;">Mode:</span>
-        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
-        
-        <span style="font-weight:600;">Devices:</span>
-        <span class="state-devices" style="font-weight:bold;">Unknown</span>
-        
-        <span style="font-weight:600;">Network:</span>
-        <span class="state-network" style="font-weight:bold;">Checking...</span>
-        
-        <span style="font-weight:600;">Web Clients:</span>
-        <span class="state-clients" style="font-weight:bold;">0</span>
-        
-        <span style="font-weight:600;">Current Song:</span>
-        <span class="state-song" style="font-weight:bold;">None</span>
-      </div>
-    </div>
-
-    <div id="gesture-display" class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:center;min-width:300px;max-width:600px;padding:20px;">
-      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Last Sent Message</div>
-      <div id="current-message" style="font-size:20px;font-weight:bold;margin-bottom:12px;color:#2B3B53;">No messages yet</div>
-      <div style="font-size:12px;opacity:0.7;">Gestures will send messages to the system (displayed here)</div>
-    </div>
-
-
-
-    <!-- Example messages -->
-    <div id="gesture-messages" style="width:100%;max-width:600px;margin-top:20px;">
-      <h2 style="text-align:center;margin-bottom:12px;font-size:16px;">📨 Example Messages</h2>
-      <div style="display:grid;gap:8px;">
-        <div class="status" style="text-align:left;padding:10px;">1. ALERT:ENEMY_NEAR</div>
-        <div class="status" style="text-align:left;padding:10px;">2. ACTION:ATTACK</div>
-        <div class="status" style="text-align:left;padding:10px;">3. ACTION:DEFEND</div>
-        <div class="status" style="text-align:left;padding:10px;">4. NAV:RETREAT</div>
-        <div class="status" style="text-align:left;padding:10px;">5. STATUS:OK</div>
-      </div>
+  <!-- IMU Rotation -->
+  <div class="card" style="background: rgba(155,89,182,0.15); border-left: 4px solid var(--purple);">
+    <div class="card-title">🎮 IMU ROTATION</div>
+    <div class="status-grid">
+      <span class="status-label">Finger 1:</span>
+      <span class="status-value" id="finger1">CENTER</span>
     </div>
   </div>
 
-  <!-- Navigation Mode Page -->
-  <div id="nav-page" class="page" style="display:none;">
-    <button class="btn" type="button" id="back-nav-btn" style="position:absolute;top:20px;left:20px;height:50px;width:50px;border-radius:50%;font-size:20px;padding:0;">←</button>
-    <h1 style="margin-top:40px;">🚗 Navigation Mode</h1>
-
-    <!-- System State Dashboard -->
-    <div class="status" style="background:rgba(43,138,239,0.15);border-left:4px solid #2b8aef;text-align:left;min-width:350px;max-width:600px;padding:20px;font-size:13px;">
-      <div style="font-size:16px;font-weight:bold;margin-bottom:15px;text-align:center;color:#2B3B53;">🖥️ SYSTEM STATE</div>
-      <div style="display:grid;grid-template-columns:auto 1fr;gap:8px 15px;">
-        <span style="font-weight:600;">Power:</span>
-        <span class="state-power" style="font-weight:bold;color:#2b8aef;">OFF</span>
-        
-        <span style="font-weight:600;">Mode:</span>
-        <span class="state-mode" style="font-weight:bold;color:#2b8aef;">idle</span>
-        
-        <span style="font-weight:600;">Devices:</span>
-        <span class="state-devices" style="font-weight:bold;">Unknown</span>
-        
-        <span style="font-weight:600;">Network:</span>
-        <span class="state-network" style="font-weight:bold;">Checking...</span>
-        
-        <span style="font-weight:600;">Web Clients:</span>
-        <span class="state-clients" style="font-weight:bold;">0</span>
-        
-        <span style="font-weight:600;">Current Song:</span>
-        <span class="state-song" style="font-weight:bold;">None</span>
-      </div>
+  <!-- Controls -->
+  <div class="controls-container">
+    <!-- D-Pad with Brake -->
+    <div class="dpad">
+      <button class="dpad-btn dpad-up" id="btn-up">▲</button>
+      <button class="dpad-btn dpad-left" id="btn-left">◀</button>
+      <button class="dpad-btn dpad-center" id="btn-brake">🛑</button>
+      <button class="dpad-btn dpad-right" id="btn-right">▶</button>
+      <button class="dpad-btn dpad-down" id="btn-down">▼</button>
     </div>
 
-    <div id="nav-status-display" class="status" style="background:rgba(46,204,113,0.15);border-left:4px solid #2ecc71;text-align:center;min-width:300px;max-width:600px;padding:20px;">
-      <div style="font-size:14px;margin-bottom:10px;opacity:0.8;">Car Status</div>
-      <div id="car-status" style="font-size:24px;font-weight:bold;margin-bottom:15px;color:#2B3B53;">Ready</div>
-      <div style="font-size:12px;opacity:0.7;">Tilt left/right to steer, forward/backward to drive</div>
+    <!-- Attack Buttons -->
+    <div class="attack-buttons">
+      <button class="attack-btn attack1" id="btn-attack1">⚔️<br>ATK1</button>
+      <button class="attack-btn attack2" id="btn-attack2">💥<br>ATK2</button>
     </div>
+  </div>
 
-    <!-- Brake Button -->
-    <button class="btn" type="button" id="brake-btn" style="height:140px;width:140px;font-size:24px;background:linear-gradient(135deg, #ef6b6b 0%, #e74c3c 100%);box-shadow:0 8px 20px rgba(231,76,60,0.3);">
-      🛑 BRAKE
-    </button>
-
-    <div class="status" style="background:rgba(255,200,87,0.15);border-left:4px solid #f39c12;text-align:left;min-width:300px;max-width:600px;padding:16px;">
-      <div style="font-size:14px;font-weight:bold;margin-bottom:8px;">⚠️ Safety Tips</div>
-      <div style="font-size:12px;line-height:1.6;">
-        • Press BRAKE button for emergency stop<br>
-        • Keep car in sight at all times<br>
-        • Test in open area away from obstacles<br>
-        • Exit Navigation Mode to stop car
-      </div>
+  <!-- Movement Log -->
+  <div class="card" style="background: rgba(52,152,219,0.15); border-left: 4px solid var(--blue);">
+    <div class="card-title">📋 MOVEMENT LOG</div>
+    <div class="log-container" id="log">
+      <div style="text-align: center; color: #95a5a6; padding: 20px;">No movements yet...</div>
     </div>
   </div>
 
   <script>
-    // ========== AUTOMATIC CONNECTION ==========
-    // Automatically connect to Pico using current host
+    // Configuration
     const API_BASE = window.location.protocol + '//' + window.location.host;
     const PICO_IP = window.location.hostname;
     
-    console.log('[STARTUP] ===========================================');
-    console.log('[STARTUP] Wearable Control Web App Starting...');
-    console.log('[STARTUP] Auto-connecting to:', PICO_IP);
-    console.log('[STARTUP] API Base:', API_BASE);
-    console.log('[STARTUP] ===========================================');
-    
-    // Get ALL page elements first (before any event listeners)
-    const mainPage = document.getElementById('main-page');
-    const musicPage = document.getElementById('music-page');
-    const battlePage = document.getElementById('battle-page');
-    const gesturePage = document.getElementById('gesture-page');
-    const navPage = document.getElementById('nav-page');
-    
-    // Verify all pages exist (log if any missing)
-    if (!mainPage || !musicPage || !battlePage || !gesturePage || !navPage) {
-      console.warn('[WARNING] One or more page elements not found!');
-      console.log('[PAGE CHECK] mainPage:', !!mainPage);
-      console.log('[PAGE CHECK] musicPage:', !!musicPage);
-      console.log('[PAGE CHECK] battlePage:', !!battlePage);
-      console.log('[PAGE CHECK] gesturePage:', !!gesturePage);
-      console.log('[PAGE CHECK] navPage:', !!navPage);
-    }
-    
-    // Get ALL button elements
-    const musicBtn = document.getElementById('music-btn');
-    const backBtn = document.getElementById('back-btn');
-    const battleBtn = document.getElementById('battle-btn');
-    const battleBackBtn = document.getElementById('back-battle-btn');
-    const gestureBtn = document.getElementById('gesture-btn');
-    const gestureBackBtn = document.getElementById('back-gesture-btn');
-    const navBtn = document.getElementById('nav-btn');
-    const navBackBtn = document.getElementById('back-nav-btn');
-    const brakeBtn = document.getElementById('brake-btn');
-    
-    // Verify all buttons exist
-    console.log('[INIT] Button check - musicBtn:', !!musicBtn, 'battleBtn:', !!battleBtn, 'gestureBtn:', !!gestureBtn, 'navBtn:', !!navBtn);
-    
-    // Get display elements
-    const currentSongEl = document.getElementById('current-song');
-    const currentMoveEl = document.getElementById('current-move');
-    const currentMessageEl = document.getElementById('current-message');
-    const carStatusEl = document.getElementById('car-status');
-    
-    const rootEl = document.documentElement;
-    const setPageId = (mode) => {
-      if (!mode) return;
-      rootEl.id = `mode-${mode}`;
-    };
-    const sequenceTextEl = document.getElementById('sequence-text');
-    const sequenceResetBtn = document.getElementById('sequence-reset');
-    let sequenceLog = [];
+    console.log('[INIT] Controller starting...');
+    console.log('[INIT] API Base:', API_BASE);
 
-    const songAlias = (name) => {
-      if (!name) return '';
-      return name;
+    // State
+    let isConnected = false;
+    let consecutiveFailures = 0;
+    let lastSuccessTime = Date.now();
+    let lastCarCommand = { direction: '', speed: 0 };
+
+    // DOM Elements
+    const elements = {
+      connectionCard: document.getElementById('connection-card'),
+      connectionStatus: document.getElementById('connection-status'),
+      power: document.getElementById('power'),
+      devices: document.getElementById('devices'),
+      network: document.getElementById('network'),
+      clients: document.getElementById('clients'),
+      carStatus: document.getElementById('car-status'),
+      finger1: document.getElementById('finger1'),
+      log: document.getElementById('log'),
+      buttons: {
+        up: document.getElementById('btn-up'),
+        down: document.getElementById('btn-down'),
+        left: document.getElementById('btn-left'),
+        right: document.getElementById('btn-right'),
+        brake: document.getElementById('btn-brake'),
+        attack1: document.getElementById('btn-attack1'),
+        attack2: document.getElementById('btn-attack2')
+      }
     };
 
-    function renderSequence() {
-      sequenceTextEl.textContent = sequenceLog.length ? sequenceLog.join(' → ') : 'No sequence yet';
-    }
-
-    // Sample songs list
-    const songs = [
-      '🎹 Moonlight Sonata - Beethoven',
-      '🎸 Bohemian Rhapsody - Queen',
-      '✨ Levitating - Dua Lipa',
-      '💫 Blinding Lights - The Weeknd',
-      '🎧 Wake Me Up - Avicii'
-    ];
-    
-    let currentSongIndex = 0;
-
-    // Show Music Mode page
-    if (musicBtn) {
-      musicBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        console.log('[PAGE SWITCH] Switching to Music Mode');
-        
-        // Hide all other pages
-        if (mainPage) mainPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show music page
-        if (musicPage) musicPage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'music'}, '', '/music_mode');
-        
-        // Send mode change to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            console.log('[SERVER] Sending mode change: Music Mode');
-            await postPressToServer('Music Mode');
-            console.log('[SERVER] Mode change sent successfully');
-          }
-        } catch(err) { 
-          console.warn('[ERROR] Mode change failed:', err);
-        }
-      });
-    }
-
-    // Back button to return to main page
-    if (backBtn) {
-      backBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        console.log('[PAGE SWITCH] Returning to Main page');
-        
-        // Hide all other pages
-        if (musicPage) musicPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show main page
-        if (mainPage) mainPage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'main'}, '', '/');
-        
-        // Send idle mode to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            await postPressToServer('Idle');
-          }
-        } catch(err) { 
-          console.warn('Mode change error:', err);
-        }
-      });
-    }
-
-    function updateSongDisplay() {
-      currentSongEl.textContent = songs[currentSongIndex];
-    }
-
-    function nextSong() {
-      currentSongIndex = (currentSongIndex + 1) % songs.length;
-      updateSongDisplay();
-    }
-
-    function prevSong() {
-      currentSongIndex = (currentSongIndex - 1 + songs.length) % songs.length;
-      updateSongDisplay();
-    }
-
-    // Expose functions for gyroscope control (optional)
-    window.musicNextSong = nextSong;
-    window.musicPrevSong = prevSong;
-
-    sequenceResetBtn.addEventListener('click', () => {
-      sequenceLog = [];
-      renderSequence();
-      try { document.getElementById('status').textContent = 'Sequence reset'; } catch(e) {}
-    });
-
-    function playSongByName(name){
-      const statusEl = document.getElementById('status');
-      const canonical = songAlias(name);
-      try{
-        // Don't play melody on web - will play on buzzer
-        // Open YouTube video instead
-        const youtubeUrls = {
-          'Moonlight Sonata': 'https://www.youtube.com/watch?v=4Tr0otuiQuU&list=RD4Tr0otuiQuU&start_radio=1',
-          'Bohemian Rhapsody': 'https://www.youtube.com/watch?v=fJ9rUzIMcZQ&list=RDfJ9rUzIMcZQ&start_radio=1'
-        };
-        if (youtubeUrls[canonical]) {
-          window.open(youtubeUrls[canonical], '_blank');
-        }
-        statusEl.textContent = `Song triggered: ${canonical} (Playing on buzzer + YouTube)`;
-        // Only update sequence if in music mode
-        if (musicPage.style.display !== 'none') {
-          sequenceLog.push(canonical);
-          if (sequenceLog.length > 8) sequenceLog.shift();
-          renderSequence();
-        }
-      }catch(e){ console.warn('playSongByName', e); }
-    }
-
-    // Song button handlers - play song and open YouTube
-    document.querySelectorAll('.song-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const songName = btn.getAttribute('data-song');
-        const youtubeUrl = btn.getAttribute('data-url');
-        
-        // Update display
-        document.getElementById('current-song').textContent = songName;
-        document.getElementById('status').textContent = `Now playing: ${songName}`;
-        
-        // Add to sequence only if in music mode
-        if (musicPage.style.display !== 'none') {
-          sequenceLog.push(songName);
-          if (sequenceLog.length > 8) sequenceLog.shift();
-          renderSequence();
-        }
-        
-        // Open YouTube
-        if (youtubeUrl) {
-          window.open(youtubeUrl, '_blank');
-        }
-        
-        // Visual feedback
-        btn.animate([
-          { transform: 'scale(1)' }, 
-          { transform: 'scale(0.98)' }, 
-          { transform: 'scale(1)' }
-        ], { duration: 200, easing: 'ease-out' });
-      });
-    });
-
-    // Battle Mode page management
-    const moves = [
-      'Punch',
-      'Kick',
-      'Shield',
-      'Dash',
-      'Ultimate Blast'
-    ];
-    let currentMoveIndex = 0;
-
-    if (battleBtn) {
-      battleBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        console.log('[PAGE SWITCH] Switching to Battle Mode');
-        
-        // Hide all pages
-        if (mainPage) mainPage.style.display = 'none';
-        if (musicPage) musicPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show battle page
-        if (battlePage) battlePage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'battle'}, '', '/battle_mode');
-        
-        // Send mode change to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            console.log('[SERVER] Sending mode change: Battle Mode');
-            await postPressToServer('Battle Mode');
-            console.log('[SERVER] Mode change sent successfully');
-          }
-        } catch(err) { 
-          console.warn('[ERROR] Mode change failed:', err);
-        }
-      });
-    }
-
-    if (battleBackBtn) {
-      battleBackBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        
-        // Hide all other pages
-        if (musicPage) musicPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show main page
-        if (mainPage) mainPage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'main'}, '', '/');
-        
-        // Send idle mode to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            await postPressToServer('Idle');
-          }
-        } catch(err) { 
-          console.warn('Mode change error:', err); 
-        }
-      });
-    }
-
-    function updateMoveDisplay() {
-      currentMoveEl.textContent = moves[currentMoveIndex];
-    }
-
-    function nextMove() {
-      currentMoveIndex = (currentMoveIndex + 1) % moves.length;
-      updateMoveDisplay();
-    }
-
-    function prevMove() {
-      currentMoveIndex = (currentMoveIndex - 1 + moves.length) % moves.length;
-      updateMoveDisplay();
-    }
-
-    window.battleNextMove = nextMove;
-    window.battlePrevMove = prevMove;
-
-    // Gesture Mode page management
-    const messages = [
-      'ALERT:ENEMY_NEAR',
-      'ACTION:ATTACK',
-      'ACTION:DEFEND',
-      'ACTION:RETREAT',
-      'STATUS:OK'
-    ];
-    let lastMessageIndex = -1;
-
-    if (gestureBtn) {
-      gestureBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        console.log('[PAGE SWITCH] Switching to Gesture Mode');
-        
-        // Hide all pages
-        if (mainPage) mainPage.style.display = 'none';
-        if (musicPage) musicPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show gesture page
-        if (gesturePage) gesturePage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'gesture'}, '', '/gesture_mode');
-        
-        // Send mode change to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            console.log('[SERVER] Sending mode change: Gesture Mode');
-            await postPressToServer('Gesture Mode');
-            console.log('[SERVER] Mode change sent successfully');
-          }
-        } catch(err) { 
-          console.warn('[ERROR] Mode change failed:', err);
-        }
-      });
-    }
-
-    if (gestureBackBtn) {
-      gestureBackBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        
-        // Hide all other pages
-        if (musicPage) musicPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show main page
-        if (mainPage) mainPage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'main'}, '', '/');
-        
-        // Send idle mode to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            await postPressToServer('Idle');
-          }
-        } catch(err) { console.warn('Mode change error:', err); }
-      });
-    }
-
-    // Navigation Mode page management
-    if (navBtn) {
-      navBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        console.log('[PAGE SWITCH] Switching to Navigation Mode');
-        
-        // Hide all pages
-        if (mainPage) mainPage.style.display = 'none';
-        if (musicPage) musicPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show navigation page
-        if (navPage) navPage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'navigation'}, '', '/navigation_mode');
-        
-        // Send mode change to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            console.log('[SERVER] Sending mode change: Navigation Mode');
-            await postPressToServer('Navigation Mode');
-            console.log('[SERVER] Mode change sent successfully');
-          }
-        } catch(err) { 
-          console.warn('[ERROR] Mode change failed:', err);
-        }
-      });
-    }
-
-    if (navBackBtn) {
-      navBackBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        
-        // Hide all other pages
-        if (musicPage) musicPage.style.display = 'none';
-        if (battlePage) battlePage.style.display = 'none';
-        if (gesturePage) gesturePage.style.display = 'none';
-        if (navPage) navPage.style.display = 'none';
-        
-        // Show main page
-        if (mainPage) mainPage.style.display = 'flex';
-        
-        // Update URL without reload
-        window.history.pushState({page: 'main'}, '', '/');
-        
-        // Send idle mode to Pico
-        try {
-          if (typeof postPressToServer === 'function') {
-            await postPressToServer('Idle');
-          }
-        } catch(err) { console.warn('Mode change error:', err); }
-      });
-    }
-
-    // Brake button - emergency stop
-    if (brakeBtn) {
-      brakeBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        if (carStatusEl) {
-          carStatusEl.textContent = '🛑 BRAKING!';
-          carStatusEl.style.color = '#e74c3c';
-        }
-        
-        // Visual feedback
-        brakeBtn.style.transform = 'scale(0.9)';
-        setTimeout(() => {
-          brakeBtn.style.transform = 'scale(1)';
-          if (carStatusEl) {
-            carStatusEl.textContent = 'Stopped';
-            carStatusEl.style.color = '#2B3B53';
-          }
-        }, 300);
-
-        // Send stop command via postPress
-        try {
-          if (typeof postPressToServer === 'function') {
-            await postPressToServer('BRAKE');
-          }
-          console.log('Brake command sent');
-        } catch(err) {
-          console.warn('Brake command failed:', err);
-        }
-      });
-    }
-
-    function sendGestureMessage(index) {
-      if (index < 0 || index >= messages.length) return;
-      lastMessageIndex = index;
-      const msg = messages[index];
-      currentMessageEl.textContent = msg;
-      // Optionally POST to server to notify (uncomment to enable):
-      // fetch(API_BASE + '/press', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ button: msg }) });
-    }
-
-    // Expose for external triggers (e.g., gestures mapped in code)
-    window.sendGestureMessage = sendGestureMessage;
-
-    // Check URL on page load and show appropriate page
-    (function initializePageFromURL() {
-      const path = window.location.pathname;
-      console.log('[INIT] Current URL path:', path);
+    // Logging
+    function logMovement(label, emoji, color) {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry flash';
+      entry.style.background = color;
+      entry.innerHTML = `<span class="log-time">${time}</span> ${emoji} <strong>${label}</strong>`;
       
-      // Hide all pages first
-      if (mainPage) mainPage.style.display = 'none';
-      if (musicPage) musicPage.style.display = 'none';
-      if (battlePage) battlePage.style.display = 'none';
-      if (gesturePage) gesturePage.style.display = 'none';
-      if (navPage) navPage.style.display = 'none';
+      // Remove placeholder
+      if (elements.log.children.length === 1 && elements.log.textContent.includes('No movements')) {
+        elements.log.innerHTML = '';
+      }
       
-      // Show page based on URL
-      if (path.includes('music')) {
-        console.log('[INIT] Showing Music Mode page');
-        if (musicPage) musicPage.style.display = 'flex';
-        window.history.replaceState({page: 'music'}, '', '/music_mode');
-        if (typeof postPressToServer === 'function') {
-          postPressToServer('Music Mode').catch(err => console.warn('Mode change error:', err));
+      elements.log.insertBefore(entry, elements.log.firstChild);
+      
+      // Keep last 10 entries
+      while (elements.log.children.length > 10) {
+        elements.log.removeChild(elements.log.lastChild);
+      }
+      
+      console.log(`[ACTION] ${label}`);
+    }
+
+    // API Communication
+    async function sendCommand(command) {
+      try {
+        const response = await fetch(API_BASE + '/press', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ button: command })
+        });
+        return await response.json();
+      } catch (error) {
+        console.error('[API] Command failed:', error);
+        return null;
+      }
+    }
+
+    async function fetchSensors() {
+      try {
+        const response = await fetch(API_BASE + '/sensors');
+        if (!response.ok) throw new Error('Network error');
+        
+        const data = await response.json();
+        lastSuccessTime = Date.now();
+        consecutiveFailures = 0;
+        isConnected = true;
+        
+        // Update connection status
+        updateConnectionStatus(true);
+        
+        // Update sensor data
+        if (data.finger1) updateFingerDisplay('finger1', data.finger1);
+        if (data.client_count !== undefined) {
+          elements.clients.textContent = data.client_count;
         }
-      } else if (path.includes('battle')) {
-        console.log('[INIT] Showing Battle Mode page');
-        if (battlePage) battlePage.style.display = 'flex';
-        window.history.replaceState({page: 'battle'}, '', '/battle_mode');
-        if (typeof postPressToServer === 'function') {
-          postPressToServer('Battle Mode').catch(err => console.warn('Mode change error:', err));
+        
+        // Update car status and log when command changes
+        if (data.car_command && data.car_command.direction !== lastCarCommand.direction) {
+          lastCarCommand = data.car_command;
+          const dir = data.car_command.direction;
+          
+          if (dir === 'forward') {
+            setCarStatus('⬆️ Forward', '52,152,219');
+            logMovement('Forward', '⬆️', 'rgba(52,152,219, 0.3)');
+          } else if (dir === 'backward') {
+            setCarStatus('⬇️ Backward', '230,126,34');
+            logMovement('Backward', '⬇️', 'rgba(230,126,34, 0.3)');
+          } else if (dir === 'left') {
+            setCarStatus('⬅️ Left', '155,89,182');
+            logMovement('Left', '⬅️', 'rgba(155,89,182, 0.3)');
+          } else if (dir === 'right') {
+            setCarStatus('➡️ Right', '26,188,156');
+            logMovement('Right', '➡️', 'rgba(26,188,156, 0.3)');
+          } else if (dir === 'stop') {
+            setCarStatus('🛑 STOP', '231,76,60');
+            logMovement('STOP', '🛑', 'rgba(231,76,60, 0.3)');
+          } else if (dir === 'spin_left') {
+            setCarStatus('⚔️ Spin Left', '243,156,18');
+            logMovement('Spin Left', '⚔️', 'rgba(243,156,18, 0.3)');
+          } else if (dir === 'spin_right') {
+            setCarStatus('💥 Spin Right', '231,76,60');
+            logMovement('Spin Right', '💥', 'rgba(231,76,60, 0.3)');
+          }
         }
-      } else if (path.includes('gesture')) {
-        console.log('[INIT] Showing Gesture Mode page');
-        if (gesturePage) gesturePage.style.display = 'flex';
-        window.history.replaceState({page: 'gesture'}, '', '/gesture_mode');
-        if (typeof postPressToServer === 'function') {
-          postPressToServer('Gesture Mode').catch(err => console.warn('Mode change error:', err));
+        
+      } catch (error) {
+        consecutiveFailures++;
+        isConnected = false;
+        updateConnectionStatus(false);
+        
+        if (consecutiveFailures >= 5) {
+          console.warn('[CONNECTION] Multiple failures, reconnecting...');
+          initConnection();
         }
-      } else if (path.includes('navigation')) {
-        console.log('[INIT] Showing Navigation Mode page');
-        if (navPage) navPage.style.display = 'flex';
-        window.history.replaceState({page: 'navigation'}, '', '/navigation_mode');
-        if (typeof postPressToServer === 'function') {
-          postPressToServer('Navigation Mode').catch(err => console.warn('Mode change error:', err));
-        }
+      }
+    }
+
+    async function fetchState() {
+      try {
+        const response = await fetch(API_BASE + '/state');
+        if (!response.ok) throw new Error('Network error');
+        
+        const data = await response.json();
+        
+        // Update system state
+        elements.power.textContent = data.power || 'OFF';
+        elements.power.style.color = data.power === 'ON' ? 'var(--green)' : 'var(--red)';
+        
+        elements.devices.textContent = data.devices_connected ? '✅ Connected' : '❌ Not Connected';
+        elements.devices.style.color = data.devices_connected ? 'var(--green)' : 'var(--red)';
+        
+        elements.network.textContent = data.network || 'Unknown';
+        elements.network.style.color = data.network?.includes('Connected') ? 'var(--green)' : 'var(--red)';
+        
+        elements.clients.textContent = data.clients || 0;
+        
+      } catch (error) {
+        console.warn('[STATE] Fetch failed:', error);
+      }
+    }
+
+    // UI Updates
+    function updateConnectionStatus(connected) {
+      if (connected) {
+        elements.connectionStatus.textContent = '✅ Connected to ' + PICO_IP;
+        elements.connectionCard.style.background = 'rgba(46,204,113,0.2)';
+        elements.connectionCard.style.borderColor = 'var(--green)';
+        elements.connectionCard.classList.add('pulse');
       } else {
-        console.log('[INIT] Showing Main page');
-        if (mainPage) mainPage.style.display = 'flex';
-        window.history.replaceState({page: 'main'}, '', '/');
-        if (typeof postPressToServer === 'function') {
-          postPressToServer('Idle').catch(err => console.warn('Mode change error:', err));
-        }
+        elements.connectionStatus.textContent = consecutiveFailures < 3 
+          ? '⚠️ Connection interrupted...' 
+          : '❌ Cannot reach Pi Pico';
+        elements.connectionCard.style.background = 'rgba(239,107,107,0.2)';
+        elements.connectionCard.style.borderColor = 'var(--red)';
+        elements.connectionCard.classList.remove('pulse');
       }
-    })();
+    }
 
-    // Handle browser back/forward buttons
-    window.addEventListener('popstate', (event) => {
-      const page = event.state?.page || 'main';
-      console.log('[POPSTATE] Navigating to:', page);
+    function updateFingerDisplay(elementId, direction) {
+      const el = elements[elementId];
+      el.textContent = direction.toUpperCase();
       
-      // Hide all pages
-      if (mainPage) mainPage.style.display = 'none';
-      if (musicPage) musicPage.style.display = 'none';
-      if (battlePage) battlePage.style.display = 'none';
-      if (gesturePage) gesturePage.style.display = 'none';
-      if (navPage) navPage.style.display = 'none';
+      const colors = {
+        up: 'var(--blue)',
+        down: 'var(--orange)',
+        left: 'var(--purple)',
+        right: '#1abc9c',
+        center: '#95a5a6'
+      };
       
-      // Show the appropriate page and notify Pico
-      switch(page) {
-        case 'music':
-          if (musicPage) musicPage.style.display = 'flex';
-          if (typeof postPressToServer === 'function') {
-            postPressToServer('Music Mode').catch(err => console.warn('Mode change error:', err));
-          }
-          break;
-        case 'battle':
-          if (battlePage) battlePage.style.display = 'flex';
-          if (typeof postPressToServer === 'function') {
-            postPressToServer('Battle Mode').catch(err => console.warn('Mode change error:', err));
-          }
-          break;
-        case 'gesture':
-          if (gesturePage) gesturePage.style.display = 'flex';
-          if (typeof postPressToServer === 'function') {
-            postPressToServer('Gesture Mode').catch(err => console.warn('Mode change error:', err));
-          }
-          break;
-        case 'navigation':
-          if (navPage) navPage.style.display = 'flex';
-          if (typeof postPressToServer === 'function') {
-            postPressToServer('Navigation Mode').catch(err => console.warn('Mode change error:', err));
-          }
-          break;
-        default:
-          if (mainPage) mainPage.style.display = 'flex';
-          if (typeof postPressToServer === 'function') {
-            postPressToServer('Idle').catch(err => console.warn('Mode change error:', err));
-          }
-      }
-    });
+      el.style.color = colors[direction] || '#95a5a6';
+    }
 
-    // POST button presses to the Pico HTTP server at /press
-    (function(){
-      const statusEl = document.getElementById('status');
-      
-      async function postPress(label) {
-        console.log(`[POST REQUEST] Sending to server: ${API_BASE}/press`);
-        console.log(`[POST DATA] Button label: "${label}"`);
-        try {
-          const resp = await fetch(API_BASE + '/press', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ button: label })
-          });
-          const data = await resp.json();
-          console.log('[SERVER RESPONSE]', data);
-          if (resp.ok && data.status === 'ok') {
-            if (statusEl) statusEl.textContent = `Mode: ${data.mode}`;
-            console.log(`[MODE CONFIRMED] Server confirmed mode: ${data.mode}`);
-          } else {
-            if (statusEl) statusEl.textContent = `Error: ${data.message || 'server error'}`;
-            console.error('[SERVER ERROR]', data);
-          }
-        } catch (err) {
-          if (statusEl) statusEl.textContent = 'Network error';
-          console.error('[NETWORK ERROR] Failed to contact server:', err);
-        }
-      }
-      
-      // Expose postPress globally for mode buttons
-      window.postPressToServer = postPress;
-      
-      // Sensor polling and UI
-      function drawBars(canvas, values, scale) {
-        const ctx = canvas.getContext('2d');
-        const w = canvas.width; const h = canvas.height;
-        ctx.clearRect(0,0,w,h);
-        const labels = ['x','y','z'];
-        const barH = Math.floor(h / 3);
-        for (let i=0;i<3;i++){
-          const v = values[i];
-          const norm = Math.max(-scale, Math.min(scale, v)) / scale; // -1..1
-          const mid = w/2;
-          const len = Math.abs(norm) * (w/2 - 6);
-          const y = i*barH + 4;
-          // background
-          ctx.fillStyle = '#eee';
-          ctx.fillRect(0, y, w, barH-6);
-          // center line
-          ctx.fillStyle = '#bbb';
-          ctx.fillRect(mid-1, y, 2, barH-6);
-          // value bar
-          ctx.fillStyle = norm >= 0 ? '#2b8aef' : '#ef6b6b';
-          if (norm >= 0) ctx.fillRect(mid, y, len, barH-6); else ctx.fillRect(mid-len, y, len, barH-6);
-          // label and value
-          ctx.fillStyle = '#123';
-          ctx.font = '10px sans-serif';
-          ctx.fillText(labels[i]+': '+v.toFixed(2), 6, y + (barH/2)+3);
-        }
-      }
+    function setCarStatus(text, color) {
+      elements.carStatus.textContent = text;
+      elements.carStatus.style.color = color;
+    }
 
-      async function fetchSensors() {
-        try {
-          const resp = await Promise.race([
-            fetch(API_BASE + '/sensors'),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-          ]);
-          
-          if (!resp.ok) throw new Error('network');
-          const data = await resp.json();
-          
-          // Update connection health
-          lastSuccessfulConnection = Date.now();
-          consecutiveFailures = 0;
+    // Button Handlers
+    function setupButton(button, command, label, emoji, color) {
+      if (!button) return;
+      
+      button.addEventListener('click', async () => {
+        // Visual feedback
+        button.classList.add('flash');
+        setTimeout(() => button.classList.remove('flash'), 300);
+        
+        // Update status
+        setCarStatus(emoji + ' ' + label, color);
+        
+        // Log action
+        logMovement(label, emoji, `rgba(${color}, 0.3)`);
+        
+        // Send command
+        await sendCommand(command);
+      });
+    }
+
+    setupButton(elements.buttons.up, 'FORWARD', 'Forward', '⬆️', '52,152,219');
+    setupButton(elements.buttons.down, 'BACKWARD', 'Backward', '⬇️', '230,126,34');
+    setupButton(elements.buttons.left, 'LEFT', 'Left', '⬅️', '155,89,182');
+    setupButton(elements.buttons.right, 'RIGHT', 'Right', '➡️', '26,188,156');
+    setupButton(elements.buttons.brake, 'BRAKE', 'BRAKE', '🛑', '231,76,60');
+    setupButton(elements.buttons.attack1, 'ATTACK1', 'Attack 1', '⚔️', '243,156,18');
+    setupButton(elements.buttons.attack2, 'ATTACK2', 'Attack 2', '💥', '231,76,60');
+
+    // Connection Management
+    async function initConnection() {
+      console.log('[CONNECTION] Initializing...');
+      elements.connectionStatus.textContent = '🔄 Connecting...';
+      
+      try {
+        const response = await fetch(API_BASE + '/sensors');
+        if (response.ok) {
+          console.log('[CONNECTION] ✓ Connected to Pico');
           isConnected = true;
-          
-          // Log connection status
-          console.log('[CONNECTION] ✓ Web app connected to Pi Pico at', PICO_IP);
-          
-          // Update connection status with prominent visual feedback
-          const connectionStatus = document.getElementById('connection-status');
-          connectionStatus.textContent = '🟢 Connected';
-          connectionStatus.style.color = '#2ecc71';
-          connectionStatus.style.fontWeight = 'bold';
-          
-          // Update connection banner with pulse animation
-          const connectionBanner = document.getElementById('connection-banner');
-          if (connectionBanner) {
-            connectionBanner.textContent = '✅ Connected to Pi Pico at ' + PICO_IP;
-            connectionBanner.style.background = 'rgba(46,204,113,0.2)';
-            connectionBanner.style.color = '#27ae60';
-            connectionBanner.classList.add('connected-pulse');
-          }
-          
-          // Connection hint removed - using simplified UI
-          
-          // update current mode display if present
-          if (data.mode !== undefined) {
-            const modeText = document.getElementById('mode-text');
-            const stateMode = document.getElementById('state-mode');
-            if (modeText) modeText.textContent = data.mode;
-            if (stateMode) stateMode.textContent = data.mode;
-            setPageId(data.mode);
-            if (statusEl) statusEl.textContent = `Mode: ${data.mode}`;
-          }
-          // update connected clients display
-          if (data.client_count !== undefined) {
-            const clientCount = document.getElementById('client-count');
-            const stateClients = document.getElementById('state-clients');
-            if (clientCount) clientCount.textContent = String(data.client_count);
-            if (stateClients) stateClients.textContent = String(data.client_count);
-          } else if (data.clients !== undefined) {
-            const clientCount = document.getElementById('client-count');
-            const stateClients = document.getElementById('state-clients');
-            if (clientCount) clientCount.textContent = String(data.clients.length);
-            if (stateClients) stateClients.textContent = String(data.clients.length);
-          }
-          
-          // Display finger rotation states
-          if (data.finger1 && data.finger2) {
-            if (statusEl) statusEl.textContent = `Mode: ${data.mode} | Finger1: ${data.finger1} | Finger2: ${data.finger2}`;
-          }
-          
-        } catch (e) {
-          consecutiveFailures++;
-          isConnected = false;
-          
-          // Log connection failure
-          console.warn('[CONNECTION] ✗ Lost connection to Pi Pico (failures:', consecutiveFailures + ')');
-          
-          // Show connection error with prominent warning
-          const connectionStatus = document.getElementById('connection-status');
-          connectionStatus.textContent = '🔴 Disconnected';
-          connectionStatus.style.color = '#ef6b6b';
-          connectionStatus.style.fontWeight = 'bold';
-          
-          // Update connection banner - remove pulse and show error
-          const connectionBanner = document.getElementById('connection-banner');
-          if (connectionBanner) {
-            connectionBanner.classList.remove('connected-pulse');
-            if (consecutiveFailures < 3) {
-              connectionBanner.textContent = '⚠️ Connection interrupted - Retrying...';
-              connectionBanner.style.background = 'rgba(243,156,18,0.2)';
-              connectionBanner.style.color = '#f39c12';
-            } else {
-              connectionBanner.textContent = '❌ Cannot reach Pi Pico';
-              connectionBanner.style.background = 'rgba(239,107,107,0.2)';
-              connectionBanner.style.color = '#e74c3c';
-            }
-          }
-          
-          // Auto-retry on connection loss
-          
-          // Attempt reconnection if too many failures
-          if (consecutiveFailures >= 5) {
-            console.warn('[SENSORS] Multiple failures, attempting reconnect...');
-            connectionAttempts = 0;
-            connectionRetryDelay = 2000;
-            initializeConnection(true);
-          }
-        }
-      }
-
-      async function fetchSystemState() {
-        try {
-          const resp = await Promise.race([
-            fetch(API_BASE + '/state'),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-          ]);
-          
-          if (!resp.ok) throw new Error('network');
-          const state = await resp.json();
-          
-          // Update connection health
-          lastSuccessfulConnection = Date.now();
           consecutiveFailures = 0;
-          isConnected = true;
-          
-          // Log system state update
-          console.log('[CONNECTION] ✓ System state updated | Power:', state.power, '| Mode:', state.mode, '| Devices:', state.devices_connected ? 'Connected' : 'Disconnected');
-          
-          // Update system state display (all instances using class selectors)
-          const deviceStatus = state.devices_connected ? '✅ Connected' : '❌ Not Connected';
-          const deviceColor = state.devices_connected ? '#2ecc71' : '#e74c3c';
-          
-          document.querySelectorAll('.state-power').forEach(el => {
-            el.textContent = state.power || 'OFF';
-            el.style.color = state.power === 'ON' ? '#2ecc71' : '#e74c3c';
-          });
-          document.getElementById('state-power').textContent = state.power || 'OFF';
-          document.getElementById('state-power').style.color = state.power === 'ON' ? '#2ecc71' : '#e74c3c';
-          
-          // Store power state globally for polling control
-          window.systemPowerOn = state.power === 'ON';
-          
-          document.querySelectorAll('.state-mode').forEach(el => {
-            el.textContent = state.mode || 'idle';
-          });
-          document.getElementById('state-mode').textContent = state.mode || 'idle';
-          
-          // Auto-change page based on current mode
-          if (state.mode && state.power === 'ON') {
-            const modeLower = state.mode.toLowerCase();
-            if (modeLower.includes('music') && mainPage.style.display !== 'none') {
-              mainPage.style.display = 'none';
-              musicPage.style.display = 'flex';
-            } else if (modeLower.includes('battle') && mainPage.style.display !== 'none') {
-              mainPage.style.display = 'none';
-              battlePage.style.display = 'flex';
-            } else if (modeLower.includes('gesture') && mainPage.style.display !== 'none') {
-              mainPage.style.display = 'none';
-              gesturePage.style.display = 'flex';
-            } else if (modeLower === 'idle' && mainPage.style.display === 'none') {
-              // Return to main page if mode is idle
-              musicPage.style.display = 'none';
-              battlePage.style.display = 'none';
-              gesturePage.style.display = 'none';
-              mainPage.style.display = 'flex';
-            }
-          }
-          
-          document.querySelectorAll('.state-devices').forEach(el => {
-            el.textContent = deviceStatus;
-            el.style.color = deviceColor;
-          });
-          const stateDevicesEl = document.getElementById('state-devices');
-          if (stateDevicesEl) {
-            stateDevicesEl.textContent = deviceStatus;
-            stateDevicesEl.style.color = deviceColor;
-          }
-          
-          document.querySelectorAll('.state-network').forEach(el => {
-            el.textContent = state.network || 'Unknown';
-            el.style.color = state.network && state.network.startsWith('Connected') ? '#2ecc71' : '#e74c3c';
-          });
-          document.getElementById('state-network').textContent = state.network || 'Unknown';
-          document.getElementById('state-network').style.color = state.network && state.network.startsWith('Connected') ? '#2ecc71' : '#e74c3c';
-          
-          document.querySelectorAll('.state-clients').forEach(el => {
-            el.textContent = String(state.clients || 0);
-          });
-          document.getElementById('state-clients').textContent = String(state.clients || 0);
-          
-          document.querySelectorAll('.state-song').forEach(el => {
-            el.textContent = state.song || 'None';
-            el.style.color = state.song && state.song !== 'None' ? '#2b8aef' : '#95a5a6';
-          });
-          document.getElementById('state-song').textContent = state.song || 'None';
-          document.getElementById('state-song').style.color = state.song && state.song !== 'None' ? '#2b8aef' : '#95a5a6';
-          
-        } catch (e) {
-          isConnected = false;
-          consecutiveFailures++;
-          
-          // Log state fetch failure
-          console.warn('[CONNECTION] ✗ Failed to fetch system state (failures:', consecutiveFailures + ')');
-          
-          // Attempt reconnection if too many failures
-          if (consecutiveFailures >= 5) {
-            console.warn('[STATE] Multiple failures, attempting reconnect...');
-            connectionAttempts = 0;
-            connectionRetryDelay = 2000;
-            initializeConnection(true);
-          }
+          updateConnectionStatus(true);
+          startPolling();
+          return true;
         }
+      } catch (error) {
+        console.warn('[CONNECTION] Failed:', error.message);
+        setTimeout(initConnection, 2000);
       }
+      
+      return false;
+    }
 
-      // Initialize system power state tracking
-      window.systemPowerOn = false;
+    function startPolling() {
+      // Poll sensors every 200ms
+      setInterval(fetchSensors, 200);
       
-      // Update connection status UI across all pages
-      function updateConnectionStatus(status, message, details = '') {
-        const banner = document.getElementById('connection-banner');
-        const detailsEl = document.getElementById('connection-details');
-        const statusElements = document.querySelectorAll('#connection-status');
-        
-        if (banner) {
-          switch(status) {
-            case 'connected':
-              banner.textContent = '✅ Connected to Pi Pico';
-              banner.style.background = 'rgba(46,204,113,0.2)';
-              banner.style.color = '#27ae60';
-              break;
-            case 'connecting':
-              banner.textContent = '🔄 ' + message;
-              banner.style.background = 'rgba(52,152,219,0.2)';
-              banner.style.color = '#3498db';
-              break;
-            case 'disconnected':
-              banner.textContent = '❌ ' + message;
-              banner.style.background = 'rgba(231,76,60,0.2)';
-              banner.style.color = '#e74c3c';
-              break;
-            case 'warning':
-              banner.textContent = '⚠️ ' + message;
-              banner.style.background = 'rgba(243,156,18,0.2)';
-              banner.style.color = '#f39c12';
-              break;
-          }
-        }
-        
-        if (detailsEl) {
-          detailsEl.textContent = details || (PICO_IP ? 'IP: ' + PICO_IP : 'No IP configured');
-        }
-        
-        // Update all status indicators
-        statusElements.forEach(el => {
-          if (status === 'connected') {
-            el.innerHTML = '🟢 Connected';
-            el.style.color = '#27ae60';
-          } else if (status === 'connecting') {
-            el.innerHTML = '🟡 Connecting...';
-            el.style.color = '#f39c12';
-          } else {
-            el.innerHTML = '🔴 Disconnected';
-            el.style.color = '#e74c3c';
-          }
-        });
-      }
+      // Poll state every 1s
+      setInterval(fetchState, 1000);
       
-      // Connection health tracking
-      let connectionAttempts = 0;
-      let maxConnectionAttempts = 999; // Essentially unlimited retries
-      let connectionRetryDelay = 2000; // Start with 2 seconds
-      let consecutiveFailures = 0;
-      let lastSuccessfulConnection = Date.now();
-      let connectionHealthInterval = null;
-      let isConnected = false;
-      
-      // Connection initialization function with retry logic
-      async function initializeConnection(isRetry = false) {
-        connectionAttempts++;
-        
-        if (isRetry) {
-          console.log(`[CONNECTION] Retry attempt ${connectionAttempts}`);
-        } else {
-          console.log('[CONNECTION] Initializing connection to Pico...');
-          console.log('[CONNECTION] Target IP:', PICO_IP);
-          console.log('[CONNECTION] API Base:', API_BASE);
-        }
-        
-        // Show connecting status
-        document.getElementById('connection-status').textContent = '🟡 Connecting...';
-        document.getElementById('connection-status').style.color = '#f39c12';
-        
-        // Update banner to show connecting state
-        const connectionBanner = document.getElementById('connection-banner');
-        if (connectionBanner) {
-          connectionBanner.textContent = '🔄 Connecting to ' + PICO_IP + '...';
-          connectionBanner.style.background = 'rgba(52,152,219,0.2)';
-          connectionBanner.style.color = '#3498db';
-          connectionBanner.classList.remove('connected-pulse');
-        }
-        
-        // Test initial connection with timeout
-        try {
-          console.log('[CONNECTION] Testing connection to:', API_BASE + '/sensors');
-          const testResp = await Promise.race([
-            fetch(API_BASE + '/sensors', { 
-              cache: 'no-cache'
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
-          ]);
-          console.log('[CONNECTION] Response received, status:', testResp.status);
-          
-          if (testResp.ok) {
-            console.log('[CONNECTION] ✓ Successfully connected to Pico');
-            console.log('[CONNECTION] Connected to:', PICO_IP);
-            document.getElementById('connection-status').textContent = '🟢 Connected to ' + PICO_IP;
-            document.getElementById('connection-status').style.color = '#2ecc71';
-            
-            // Update connection banner with pulse
-            const connectionBanner = document.getElementById('connection-banner');
-            if (connectionBanner) {
-              connectionBanner.textContent = '✅ Connected to Pi Pico at ' + PICO_IP;
-              connectionBanner.style.background = 'rgba(46,204,113,0.2)';
-              connectionBanner.style.color = '#27ae60';
-              connectionBanner.classList.add('connected-pulse');
-            }
-            
-            // Connection successful - live updates active
-            
-            // Reset connection tracking on success
-            connectionAttempts = 0;
-            consecutiveFailures = 0;
-            lastSuccessfulConnection = Date.now();
-            connectionRetryDelay = 2000;
-            isConnected = true;
-            
-            // Start polling
-            startPolling();
-            
-            // Immediately fetch system state to populate device status
-            fetchSystemState();
-            
-            // Start connection health monitoring
-            startConnectionHealthMonitor();
-            
-            return true;
-          }
-        } catch (error) {
-          console.warn('[CONNECTION] Failed to connect:', error.message);
-          console.warn('[CONNECTION] Make sure:', 
-            '\n1. Pico is powered ON and WiFi connected',
-            '\n2. Your device is on the same network (THIRDEARTH)',
-            '\n3. Pico IP address is correct:', PICO_IP,
-            '\n4. Check Pico console for its IP address');
-          consecutiveFailures++;
-          isConnected = false;
-          
-          console.warn('[CONNECTION] Cannot reach Pico. Make sure Pico is ON and connected to WiFi (THIRDEARTH)');
-          
-          // Update connection banner
-          const connectionBanner = document.getElementById('connection-banner');
-          if (connectionBanner) {
-            connectionBanner.textContent = '❌ Cannot connect to Pi Pico - Retrying...';
-            connectionBanner.style.background = 'rgba(239,107,107,0.2)';
-            connectionBanner.style.color = '#e74c3c';
-          }
-          
-          // Always retry with exponential backoff
-          document.getElementById('connection-status').textContent = `⚪ Retrying in ${connectionRetryDelay/1000}s... (${consecutiveFailures})`;
-          document.getElementById('connection-status').style.color = '#f39c12';
-          
-          // Exponential backoff (max 10 seconds)
-          setTimeout(() => {
-            initializeConnection(true);
-          }, connectionRetryDelay);
-          
-          connectionRetryDelay = Math.min(connectionRetryDelay * 1.5, 10000);
-          
-          return false;
-        }
-      }
-      
-      // Start polling functions
-      function startPolling() {
-        // Clear any existing intervals
-        if (window.sensorInterval) clearInterval(window.sensorInterval);
-        if (window.stateInterval) clearInterval(window.stateInterval);
-        
-        // Start polling sensors at ~5Hz for real-time updates
-        window.sensorInterval = setInterval(fetchSensors, 200);
-        
-        // Poll system state every 1 second for constant connection monitoring
-        window.stateInterval = setInterval(fetchSystemState, 1000);
-        
-        console.log('[POLLING] Started polling - Sensors: 200ms, State: 1000ms');
-      }
-      
-      // Monitor connection health and reconnect if needed
-      function startConnectionHealthMonitor() {
-        if (connectionHealthInterval) {
-          clearInterval(connectionHealthInterval);
-        }
-        
-        connectionHealthInterval = setInterval(() => {
-          const timeSinceLastSuccess = Date.now() - lastSuccessfulConnection;
-          
-          // If no successful connection in 10 seconds and multiple failures, attempt reconnect
-          if (timeSinceLastSuccess > 10000 && consecutiveFailures > 3 && !isConnected) {
-            console.warn('[HEALTH] Connection appears unhealthy, reconnecting...');
-            document.getElementById('connection-status').textContent = '🟡 Reconnecting...';
-            document.getElementById('connection-status').style.color = '#f39c12';
-            
-            // Reset and reconnect
-            connectionAttempts = 0;
-            connectionRetryDelay = 2000;
-            initializeConnection(true);
-          }
-        }, 3000); // Check every 3 seconds
-      }
-      
-      // Auto-initialize connection immediately
-      initializeConnection();
+      console.log('[POLLING] Started');
+    }
 
-      // Volume control
-      let masterVolume = 0.5; // default 50%
-      const volumeSlider = document.getElementById('volume-slider');
-      const volumeValue = document.getElementById('volume-value');
-      
-      if (volumeSlider && volumeValue) {
-        volumeSlider.addEventListener('input', (e) => {
-          const val = parseInt(e.target.value);
-          masterVolume = val / 100;
-          volumeValue.textContent = val + '%';
-          // Update slider background gradient
-          e.target.style.background = `linear-gradient(90deg, var(--accent) 0%, var(--accent) ${val}%, rgba(255,255,255,0.3) ${val}%, rgba(255,255,255,0.3) 100%)`;
-        });
-      }
-    })();
+    // Start
+    initConnection();
   </script>
 </body>
 </html>
-
-
