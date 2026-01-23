@@ -1,3 +1,4 @@
+
 """
 Motor Car Controller for MicroPython
 Controls motors to drive a robot car via WiFi commands
@@ -23,7 +24,7 @@ class MotorCar:
     """
     
     def __init__(self, in1_pin=16, in2_pin=17, ena_pin=18,
-                 in3_pin=19, in4_pin=20, enb_pin=21):
+                 in3_pin=19, in4_pin=20, enb_pin=21, servo1_pin=22, servo2_pin=26):
         # Motor A (Left side)
         self.motor_a_in1 = Pin(in1_pin, Pin.OUT)
         self.motor_a_in2 = Pin(in2_pin, Pin.OUT)
@@ -36,8 +37,33 @@ class MotorCar:
         self.motor_b_pwm = PWM(Pin(enb_pin))
         self.motor_b_pwm.freq(1000)
         
+        # Servo 1 (Left side) for attacks
+        self.servo1 = None
+        try:
+            self.servo1 = PWM(Pin(servo1_pin))
+            self.servo1.freq(50)  # 50Hz for servo control
+            print("Servo 1 initialized on pin", servo1_pin)
+        except Exception as e:
+            print(f"Servo 1 initialization failed: {e}")
+            self.servo1 = None
+        
+        # Servo 2 (Right side) for attacks - mirrors Servo 1
+        self.servo2 = None
+        try:
+            self.servo2 = PWM(Pin(servo2_pin))
+            self.servo2.freq(50)  # 50Hz for servo control
+            print("Servo 2 initialized on pin", servo2_pin)
+        except Exception as e:
+            print(f"Servo 2 initialization failed: {e}")
+            self.servo2 = None
+        
+        # Set both servos to start position
+        if self.servo1 or self.servo2:
+            self.set_servo_angle(0)  # Start at 0 degrees
+        
         self.max_speed = 65535  # 16-bit PWM
         self.current_speed = 0
+        self.current_servo_angle = 0
         
         print("Motor Car initialized")
         self.stop()
@@ -79,40 +105,40 @@ class MotorCar:
     def forward(self, speed=70):
         """Drive forward at given speed (0-100)"""
         print(f"Forward: {speed}%")
-        self.set_motor_a(speed)
         self.set_motor_b(speed)
+        self.set_motor_a(speed)
         self.current_speed = speed
     
     def backward(self, speed=70):
         """Drive backward at given speed (0-100)"""
         print(f"Backward: {speed}%")
-        self.set_motor_a(-speed)
         self.set_motor_b(-speed)
+        self.set_motor_a(-speed)
         self.current_speed = -speed
     
     def turn_left(self, speed=60):
-        """Turn left (left motor slower/backward, right motor forward)"""
+        """Turn left (left motor backward, right motor forward)"""
         print(f"Turn Left: {speed}%")
-        self.set_motor_a(speed // 2)
-        self.set_motor_b(speed)
+        self.set_motor_b(-speed)
+        self.set_motor_a(speed)
     
     def turn_right(self, speed=60):
-        """Turn right (right motor slower/backward, left motor forward)"""
+        """Turn right (left motor forward, right motor backward)"""
         print(f"Turn Right: {speed}%")
-        self.set_motor_a(speed)
-        self.set_motor_b(speed // 2)
+        self.set_motor_b(speed)
+        self.set_motor_a(-speed)
     
     def spin_left(self, speed=50):
         """Spin left in place"""
         print(f"Spin Left: {speed}%")
-        self.set_motor_a(-speed)
-        self.set_motor_b(speed)
+        self.set_motor_b(-speed)
+        self.set_motor_a(speed)
     
     def spin_right(self, speed=50):
         """Spin right in place"""
         print(f"Spin Right: {speed}%")
-        self.set_motor_a(speed)
-        self.set_motor_b(-speed)
+        self.set_motor_b(speed)
+        self.set_motor_a(-speed)
     
     def stop(self):
         """Stop all motors"""
@@ -121,11 +147,63 @@ class MotorCar:
         self.set_motor_b(0)
         self.current_speed = 0
     
+    def set_servo_angle(self, angle):
+        """Set both servos to specific angle (0-180 degrees)
+        Servo 1 moves to angle, Servo 2 moves to opposite angle (180-angle)
+        This creates mirrored movement from opposite sides
+        """
+        if self.servo1 is None and self.servo2 is None:
+            return False
+        
+        try:
+            # Convert angle to duty cycle
+            # Servo pulse width: 1ms (0°) to 2ms (180°) at 50Hz
+            # Duty cycle range: ~1600 to ~8000 for 16-bit PWM
+            min_duty = 1600   # 0 degrees
+            max_duty = 8000   # 180 degrees
+            
+            # Clamp angle between 0 and 180
+            angle = max(0, min(180, angle))
+            
+            # Calculate duty cycle for servo 1
+            duty1 = int(min_duty + (angle / 180) * (max_duty - min_duty))
+            
+            # Calculate opposite angle for servo 2 (mirrored movement)
+            opposite_angle = 180 - angle
+            duty2 = int(min_duty + (opposite_angle / 180) * (max_duty - min_duty))
+            
+            # Set servo 1
+            if self.servo1:
+                self.servo1.duty_u16(duty1)
+            
+            # Set servo 2 (opposite direction)
+            if self.servo2:
+                self.servo2.duty_u16(duty2)
+            
+            self.current_servo_angle = angle
+            print(f"Servos angle: {angle}° (Servo2: {opposite_angle}°)")
+            return True
+        except Exception as e:
+            print(f"Servo error: {e}")
+            return False
+    
     def cleanup(self):
         """Clean up PWM and stop motors"""
+        print("Stopping motors and cleaning up...")
         self.stop()
+        # Ensure motors are fully off
+        self.motor_a_in1.value(0)
+        self.motor_a_in2.value(0)
+        self.motor_b_in1.value(0)
+        self.motor_b_in2.value(0)
+        # Deinitialize PWM
         self.motor_a_pwm.deinit()
         self.motor_b_pwm.deinit()
+        if self.servo1:
+            self.servo1.deinit()
+        if self.servo2:
+            self.servo2.deinit()
+        print("Motors stopped and cleanup complete")
 
 
 def demo_drive():
@@ -204,7 +282,10 @@ def handle_car_command(car, command, speed=70):
     else:
         print(f"Unknown command: {command}")
 
-
+#BELL470
+#911A9DEC7146
+#THIRDEARTH
+#Mr.LamYo       
 def setup_wifi_client(ssid="BELL470", password="911A9DEC7146"):
     """Connect to existing WiFi network to receive commands"""
     wlan = network.WLAN(network.STA_IF)
@@ -255,11 +336,17 @@ def run_car_client(controller_ip):
     print(f'   Polling controller at: {controller_ip}')
     print(f'   Command endpoint: /car_command')
     print(f'   Poll interval: 100ms')
+    print(f'   Safety timeout: 2 seconds')
     print('='*50 + '\n')
     
     current_direction = 'stop'
+    last_log_entry = None
     poll_url = f'http://{controller_ip}/car_command'
     consecutive_failures = 0
+    max_failures_before_reconnect = 50  # Try to reconnect after 50 failures
+    last_command_time = 0
+    command_timeout = 2000  # milliseconds - stop if no command for 2 seconds
+    error_logged = False  # Track if we've logged connection issues
     
     try:
         while True:
@@ -270,49 +357,97 @@ def run_car_client(controller_ip):
                 except:
                     import requests
                 
-                response = requests.get(poll_url, timeout=2)
+                response = requests.get(poll_url, timeout=0.5)
                 
                 if response.status_code == 200:
                     cmd = response.json()
                     direction = cmd.get('direction', 'stop')
                     speed = cmd.get('speed', 70)
+                    servo_angle = cmd.get('servo_angle', None)  # Get servo angle if present
+                    log_entry = cmd.get('log_entry', None)  # Get latest log entry
                     response.close()
                     
                     # Reset failure counter on success
                     if consecutive_failures > 0:
                         print('[CONNECTION] ✅ Reconnected to controller')
+                        error_logged = False
                     consecutive_failures = 0
                     
-                    # Execute command if changed
+                    # Update last command time
+                    from utime import ticks_ms
+                    last_command_time = ticks_ms()
+                    
+                    # Show log updates from controller
+                    if log_entry and log_entry != last_log_entry:
+                        print(f'[CONTROLLER LOG] {log_entry}')
+                        last_log_entry = log_entry
+                    
+                    # Control servo if angle is specified
+                    if servo_angle is not None and servo_angle != car.current_servo_angle:
+                        print(f'[ATTACK] Servo → {servo_angle}°')
+                        car.set_servo_angle(servo_angle)
+                    
+                    # Execute command (always execute to ensure motors respond)
                     if direction != current_direction:
                         print(f'[COMMAND] {direction.upper()} @ {speed}%')
-                        
-                        if direction == 'forward':
-                            car.forward(speed)
-                        elif direction == 'backward':
-                            car.backward(speed)
-                        elif direction == 'left':
-                            car.turn_left(speed)
-                        elif direction == 'right':
-                            car.turn_right(speed)
-                        elif direction == 'spin_left':
-                            car.spin_left(speed)
-                        elif direction == 'spin_right':
-                            car.spin_right(speed)
-                        else:
-                            car.stop()
-                        
                         current_direction = direction
+                    
+                    # Execute motor command based on direction
+                    if direction == 'forward':
+                        car.forward(speed)
+                    elif direction == 'backward':
+                        car.backward(speed)
+                    elif direction == 'left':
+                        car.turn_left(speed)
+                    elif direction == 'right':
+                        car.turn_right(speed)
+                    elif direction == 'spin_left':
+                        car.spin_left(speed)
+                    elif direction == 'spin_right':
+                        car.spin_right(speed)
+                    else:
+                        car.stop()
+                        
                 else:
                     response.close()
                     consecutive_failures += 1
+                    if not error_logged:
+                        print(f'[CONNECTION] ⚠️ Bad response from controller (status: {response.status_code})')
+                        error_logged = True
                     
             except Exception as e:
                 consecutive_failures += 1
-                if consecutive_failures % 10 == 1:  # Print every 10 failures
-                    print(f'[CONNECTION] ⚠️ Failed to reach controller (failures: {consecutive_failures})')
+                # Only log first error to avoid spam
+                if not error_logged:
+                    print(f'[CONNECTION] ⚠️ Cannot reach controller: {str(e)[:50]}')
+                    error_logged = True
+                
+                # Attempt WiFi reconnection if failures are too high
+                if consecutive_failures >= max_failures_before_reconnect:
+                    print(f'[CONNECTION] ❌ Too many failures ({consecutive_failures}), attempting WiFi reconnect...')
+                    try:
+                        wlan.active(False)
+                        sleep(2)
+                        wlan = setup_wifi_client()
+                        if wlan:
+                            print('[CONNECTION] 🔄 WiFi reconnected, resuming...')
+                            consecutive_failures = 0
+                            error_logged = False
+                        else:
+                            print('[CONNECTION] ❌ WiFi reconnect failed, stopping...')
+                            break
+                    except:
+                        print('[CONNECTION] ❌ Reconnect failed, stopping...')
+                        break
             
-            sleep(0.1)  # Poll every 100ms
+            # Connection timeout - continue last command instead of stopping
+            from utime import ticks_ms, ticks_diff
+            if last_command_time > 0 and ticks_diff(ticks_ms(), last_command_time) > command_timeout:
+                if not error_logged:
+                    print('[SAFETY] ⚠️ Connection timeout - continuing last command:', current_direction.upper())
+                    error_logged = True
+            
+            sleep(0.01)  # Poll every 10ms for instant response
             
     except KeyboardInterrupt:
         print("\nShutting down...")
@@ -324,8 +459,20 @@ def run_car_client(controller_ip):
 
 if __name__ == "__main__":
     # CONFIGURATION: Set your controller Pico's IP address here
-    # Check main.py console output for "My Pico's IP address is: X.X.X.X"
-    CONTROLLER_IP = '192.168.99.38'  # Change this to your main.py Pico's IP
+    # Run main.py first and look for the line: "[WIFI] IP Address: X.X.X.X"
+    # Copy that IP address and paste it below
+    CONTROLLER_IP = '192.168.2.63'  # ⚠️ CHANGE THIS to your main.py controller's IP address!
+    
+    print('\n' + '='*50)
+    print('⚙️  GHOST CAR CONFIGURATION')
+    print('='*50)
+    print(f'   Controller IP: {CONTROLLER_IP}')
+    print(f'   WiFi Network: THIRDEARTH')
+    print('='*50)
+    print('\n⚠️  Make sure main.py is running first!')
+    print('⚠️  Check main.py output for correct IP address\n')
     
     # Run WiFi-controlled car client (polls controller for commands)
     run_car_client(CONTROLLER_IP)
+
+
