@@ -1,0 +1,2 @@
+This is the code of the RC car with all the functions when getting commands from the wearable tech.
+Used for second Pi Pico
