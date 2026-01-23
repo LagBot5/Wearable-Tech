@@ -21,10 +21,8 @@ except:
     MPU6050 = None
 
 # ============ CONFIGURATION ============
-WIFI_SSID = "BELL470"
-WIFI_PASSWORD = "911A9DEC7146"
-#WIFI_SSID = "THIRDEARTH"
-#WIFI_PASSWORD = "Mr.LamYo"
+WIFI_SSID = "someWifi"
+WIFI_PASSWORD = "somePassword"
 HTTP_PORT = 80
 
 # Hardware pins
@@ -697,4 +695,5 @@ def main():
 # Start the program
 if __name__ == '__main__':
     main()
+
 
