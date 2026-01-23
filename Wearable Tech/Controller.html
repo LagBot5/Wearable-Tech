@@ -260,11 +260,21 @@
     </div>
   </div>
 
-  <!-- Car Status -->
-  <div class="card" style="background: rgba(46,204,113,0.15); border-left: 4px solid var(--green);">
-    <div class="card-title">Car Status</div>
-    <div style="font-size: 24px; font-weight: bold; text-align: center; margin: 10px 0;" id="car-status">Ready</div>
-    <div style="font-size: 12px; text-align: center; opacity: 0.7;">Tilt to control or use buttons</div>
+  <!-- Car Status - Two Column Layout -->
+  <div style="display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1200px;">
+    <!-- Movement Status -->
+    <div class="card" style="background: rgba(46,204,113,0.15); border-left: 4px solid var(--green); flex: 1; min-width: 280px;">
+      <div class="card-title">🚗 Movement Status</div>
+      <div style="font-size: 24px; font-weight: bold; text-align: center; margin: 10px 0;" id="car-status">Ready</div>
+      <div style="font-size: 12px; text-align: center; opacity: 0.7;">Direction & Speed</div>
+    </div>
+    
+    <!-- Attack Status -->
+    <div class="card" style="background: rgba(231,76,60,0.15); border-left: 4px solid var(--red); flex: 1; min-width: 280px;">
+      <div class="card-title">⚔️ Attack Status</div>
+      <div style="font-size: 24px; font-weight: bold; text-align: center; margin: 10px 0;" id="attack-status">Standby</div>
+      <div style="font-size: 12px; text-align: center; opacity: 0.7;">Servo Position</div>
+    </div>
   </div>
 
   <!-- IMU Rotation -->
@@ -289,8 +299,15 @@
 
     <!-- Attack Buttons -->
     <div class="attack-buttons">
-      <button class="attack-btn attack1" id="btn-attack1">⚔️<br>ATK1</button>
-      <button class="attack-btn attack2" id="btn-attack2">💥<br>ATK2</button>
+      <button class="attack-btn attack1" id="btn-attack1">⚔️<br>Extendo</button>
+      <button class="attack-btn attack2" id="btn-attack2">💥<br>Pinch</button>
+      <button class="attack-btn attack1" id="btn-attack3" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">⚡<br>Return</button>
+    </div>
+    
+    <!-- Dance Buttons -->
+    <div class="attack-buttons">
+      <button class="attack-btn" id="btn-dance-start" style="background: linear-gradient(135deg, #f1c40f, #f39c12); width: 120px;">🕺<br>Dance</button>
+      <button class="attack-btn" id="btn-dance-stop" style="background: linear-gradient(135deg, #95a5a6, #7f8c8d); width: 120px;">🛑<br>Stop Dance</button>
     </div>
   </div>
 
@@ -304,17 +321,35 @@
 
   <script>
     // Configuration
-    const API_BASE = window.location.protocol + '//' + window.location.host;
+    const API_BASE = window.location.protocol + '//' + window.location.hostname + (window.location.port ? ':' + window.location.port : '');
     const PICO_IP = window.location.hostname;
+    
+    // Fetch configuration for better connection handling
+    const FETCH_CONFIG = {
+      keepalive: true,
+      mode: 'cors',
+      credentials: 'same-origin'
+    };
     
     console.log('[INIT] Controller starting...');
     console.log('[INIT] API Base:', API_BASE);
+    console.log('[INIT] Pico IP:', PICO_IP);
 
     // State
     let isConnected = false;
     let consecutiveFailures = 0;
+    let consecutiveSuccesses = 0;
     let lastSuccessTime = Date.now();
-    let lastCarCommand = { direction: '', speed: 0 };
+    let sensorErrorLogged = false;
+    let stateErrorLogged = false;
+    let reconnecting = false;
+    let fetchInProgress = false;
+    let stateInProgress = false;
+    let lastSensorData = null; // Cache last successful data
+    let lastLocalUpdate = 0; // Track when user last pressed button
+    const LOCAL_UPDATE_DEBOUNCE = 1500; // Don't overwrite status for 1.5s after button press
+    const CONNECTION_HEALTH_THRESHOLD = 3; // Need 3 successes to mark as connected
+    const CONNECTION_FAIL_THRESHOLD = 8; // Need 8 failures to mark as disconnected
 
     // DOM Elements
     const elements = {
@@ -325,6 +360,7 @@
       network: document.getElementById('network'),
       clients: document.getElementById('clients'),
       carStatus: document.getElementById('car-status'),
+      attackStatus: document.getElementById('attack-status'),
       finger1: document.getElementById('finger1'),
       log: document.getElementById('log'),
       buttons: {
@@ -334,7 +370,10 @@
         right: document.getElementById('btn-right'),
         brake: document.getElementById('btn-brake'),
         attack1: document.getElementById('btn-attack1'),
-        attack2: document.getElementById('btn-attack2')
+        attack2: document.getElementById('btn-attack2'),
+        attack3: document.getElementById('btn-attack3'),
+        danceStart: document.getElementById('btn-dance-start'),
+        danceStop: document.getElementById('btn-dance-stop')
       }
     };
 
@@ -362,123 +401,363 @@
     }
 
     // API Communication
-    async function sendCommand(command) {
-      try {
-        const response = await fetch(API_BASE + '/press', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ button: command })
-        });
-        return await response.json();
-      } catch (error) {
-        console.error('[API] Command failed:', error);
-        return null;
+    async function sendCommand(command, retries = 2) {
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const response = await fetch(API_BASE + '/press', {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache',
+              'Connection': 'keep-alive'
+            },
+            body: JSON.stringify({ button: command }),
+            signal: controller.signal,
+            ...FETCH_CONFIG
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response) {
+            throw new Error('No response');
+          }
+          
+          if (response.ok) {
+            try {
+              const text = await response.text();
+              if (!text || text.trim() === '') {
+                return { status: 'ok' };
+              }
+              const data = JSON.parse(text);
+              return data;
+            } catch (parseError) {
+              return { status: 'ok' };
+            }
+          }
+          
+          // Handle specific error codes
+          if (response.status === 400) {
+            const errorText = await response.text().catch(() => 'Bad Request');
+            console.error('[API] Bad request:', errorText);
+            return null; // Don't retry 400 errors
+          }
+          
+          // Retry on server errors (500+)
+          if (response.status >= 500 && attempt < retries) {
+            await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+            continue;
+          }
+          
+          throw new Error(`HTTP ${response.status}`);
+          
+        } catch (error) {
+          if (attempt === retries) {
+            // Only log on final failure
+            if (isConnected || consecutiveFailures < 3) {
+              const errorMsg = error.name === 'AbortError' ? 'Request timeout' : error.message;
+              console.error('[API] Command failed:', errorMsg);
+            }
+            return null;
+          }
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 400 * (attempt + 1)));
+        }
       }
+      return null;
     }
 
     async function fetchSensors() {
+      // Skip if already fetching or definitely disconnected
+      if (fetchInProgress) return;
+      if (!isConnected && consecutiveFailures > 15) return; // Increased threshold
+      
+      fetchInProgress = true;
+      
       try {
-        const response = await fetch(API_BASE + '/sensors');
-        if (!response.ok) throw new Error('Network error');
+        // Create abort controller for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased to 5s
         
-        const data = await response.json();
+        const response = await fetch(API_BASE + '/sensors', {
+          signal: controller.signal,
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+          },
+          ...FETCH_CONFIG
+        });
+        clearTimeout(timeoutId);
+        
+        // Check if response is valid
+        if (!response) {
+          throw new Error('No response received');
+        }
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Invalid response type');
+        }
+        
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          throw new Error('Empty response');
+        }
+        
+        const data = JSON.parse(text);
+        
+        // Validate response data
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid data format');
+        }
+        
         lastSuccessTime = Date.now();
         consecutiveFailures = 0;
-        isConnected = true;
+        consecutiveSuccesses++;
+        
+        // Only mark as connected after multiple successes (prevents flapping)
+        if (consecutiveSuccesses >= CONNECTION_HEALTH_THRESHOLD || isConnected) {
+          isConnected = true;
+        }
+        
+        // Cache the data
+        lastSensorData = data;
+        
+        // Reset error flags on success
+        if (sensorErrorLogged) {
+          console.log('[CONNECTION] ✅ Sensor fetch restored');
+        }
+        sensorErrorLogged = false;
         
         // Update connection status
         updateConnectionStatus(true);
         
-        // Update sensor data
-        if (data.finger1) updateFingerDisplay('finger1', data.finger1);
-        if (data.client_count !== undefined) {
-          elements.clients.textContent = data.client_count;
-        }
-        
-        // Update car status and log when command changes
-        if (data.car_command && data.car_command.direction !== lastCarCommand.direction) {
-          lastCarCommand = data.car_command;
-          const dir = data.car_command.direction;
-          
-          if (dir === 'forward') {
-            setCarStatus('⬆️ Forward', '52,152,219');
-            logMovement('Forward', '⬆️', 'rgba(52,152,219, 0.3)');
-          } else if (dir === 'backward') {
-            setCarStatus('⬇️ Backward', '230,126,34');
-            logMovement('Backward', '⬇️', 'rgba(230,126,34, 0.3)');
-          } else if (dir === 'left') {
-            setCarStatus('⬅️ Left', '155,89,182');
-            logMovement('Left', '⬅️', 'rgba(155,89,182, 0.3)');
-          } else if (dir === 'right') {
-            setCarStatus('➡️ Right', '26,188,156');
-            logMovement('Right', '➡️', 'rgba(26,188,156, 0.3)');
-          } else if (dir === 'stop') {
-            setCarStatus('🛑 STOP', '231,76,60');
-            logMovement('STOP', '🛑', 'rgba(231,76,60, 0.3)');
-          } else if (dir === 'spin_left') {
-            setCarStatus('⚔️ Spin Left', '243,156,18');
-            logMovement('Spin Left', '⚔️', 'rgba(243,156,18, 0.3)');
-          } else if (dir === 'spin_right') {
-            setCarStatus('💥 Spin Right', '231,76,60');
-            logMovement('Spin Right', '💥', 'rgba(231,76,60, 0.3)');
+        // Update sensor data with safe access
+        try {
+          if (data && data.finger1) {
+            updateFingerDisplay('finger1', data.finger1);
+            // console.log('[SENSOR] Finger1:', data.finger1); // Uncomment for debugging
           }
+          
+          // Update movement status if provided - but respect recent button presses
+          const now = Date.now();
+          const timeSinceUpdate = now - lastLocalUpdate;
+          if (data && data.status_text && data.status_emoji && data.status_color) {
+            // Only update from server if enough time has passed since last button press
+            if (timeSinceUpdate > LOCAL_UPDATE_DEBOUNCE) {
+              setCarStatus(data.status_emoji + ' ' + data.status_text, `rgb(${data.status_color})`);
+            }
+          }
+          
+          // Update attack status separately
+          if (data && data.attack_text && data.attack_emoji && data.attack_color) {
+            setAttackStatus(data.attack_emoji + ' ' + data.attack_text, `rgb(${data.attack_color})`);
+          }
+          
+          // Update client count with validation
+          const clientCount = (data && data.client_count !== undefined) ? data.client_count : 0;
+          if (elements.clients) {
+            elements.clients.textContent = clientCount;
+            elements.clients.style.color = clientCount > 0 ? 'var(--green)' : 'var(--red)';
+          }
+        } catch (updateError) {
+          // Error silently handled
         }
         
       } catch (error) {
         consecutiveFailures++;
-        isConnected = false;
-        updateConnectionStatus(false);
+        consecutiveSuccesses = 0; // Reset success counter
         
-        if (consecutiveFailures >= 5) {
-          console.warn('[CONNECTION] Multiple failures, reconnecting...');
-          initConnection();
+        // Use cached data if available and failure is minor
+        if (lastSensorData && consecutiveFailures < 5) {
+          try {
+            if (lastSensorData.finger1) {
+              updateFingerDisplay('finger1', lastSensorData.finger1);
+            }
+          } catch (e) {
+            // Ignore cache update errors
+          }
         }
+        
+        // Only mark as disconnected after multiple failures (prevents flapping)
+        if (error.name !== 'SyntaxError' && consecutiveFailures >= CONNECTION_FAIL_THRESHOLD) {
+          isConnected = false;
+          updateConnectionStatus(false);
+        }
+        
+        // Only log first error of each type
+        if (!sensorErrorLogged) {
+          let errorMsg = 'Unknown error';
+          if (error.name === 'AbortError') {
+            errorMsg = 'Request timeout';
+          } else if (error.name === 'SyntaxError') {
+            errorMsg = 'Invalid JSON response';
+          } else if (error.message) {
+            errorMsg = error.message;
+          }
+          sensorErrorLogged = true;
+        }
+        
+        // Attempt reconnection after many failures, but only once
+        if (consecutiveFailures >= 20 && !reconnecting) { // Increased from 10 to 20
+          reconnecting = true;
+          sensorErrorLogged = false; // Reset for next attempt
+          
+          // Stop polling to prevent spam
+          if (pollingSensorInterval) clearInterval(pollingSensorInterval);
+          if (pollingStateInterval) clearInterval(pollingStateInterval);
+          
+          setTimeout(() => {
+            connectionAttempts = 0; // Reset attempts for reconnection
+            consecutiveSuccesses = 0; // Reset success counter
+            initConnection();
+            reconnecting = false;
+          }, 5000); // Increased delay to 5s
+        }
+      } finally {
+        fetchInProgress = false;
       }
     }
 
     async function fetchState() {
+      // Skip if already fetching or definitely disconnected
+      if (stateInProgress) return;
+      if (!isConnected && consecutiveFailures > 15) return; // Increased threshold
+      
+      stateInProgress = true;
+      
       try {
-        const response = await fetch(API_BASE + '/state');
-        if (!response.ok) throw new Error('Network error');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // Increased to 5s
         
-        const data = await response.json();
+        const response = await fetch(API_BASE + '/state', {
+          signal: controller.signal,
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+          },
+          ...FETCH_CONFIG
+        });
+        clearTimeout(timeoutId);
         
-        // Update system state
-        elements.power.textContent = data.power || 'OFF';
-        elements.power.style.color = data.power === 'ON' ? 'var(--green)' : 'var(--red)';
+        if (!response) {
+          throw new Error('No response received');
+        }
         
-        elements.devices.textContent = data.devices_connected ? '✅ Connected' : '❌ Not Connected';
-        elements.devices.style.color = data.devices_connected ? 'var(--green)' : 'var(--red)';
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
         
-        elements.network.textContent = data.network || 'Unknown';
-        elements.network.style.color = data.network?.includes('Connected') ? 'var(--green)' : 'var(--red)';
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          throw new Error('Invalid response type');
+        }
         
-        elements.clients.textContent = data.clients || 0;
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+          throw new Error('Empty response');
+        }
+        
+        const data = JSON.parse(text);
+        
+        // Validate data
+        if (!data || typeof data !== 'object') {
+          throw new Error('Invalid data format');
+        }
+        
+        // Reset error flag on success
+        if (stateErrorLogged) {
+          stateErrorLogged = false;
+        }
+        
+        // Update system state with safe access
+        try {
+          if (elements.power) {
+            elements.power.textContent = data.power || 'OFF';
+            elements.power.style.color = data.power === 'ON' ? 'var(--green)' : 'var(--red)';
+          }
+          
+          if (elements.devices) {
+            elements.devices.textContent = data.devices_connected ? '✅ Connected' : '❌ Not Connected';
+            elements.devices.style.color = data.devices_connected ? 'var(--green)' : 'var(--red)';
+          }
+          
+          if (elements.network) {
+            elements.network.textContent = data.network || 'Unknown';
+            elements.network.style.color = data.network?.includes('Connected') ? 'var(--green)' : 'var(--red)';
+          }
+          
+          // Update clients with proper fallback
+          const clients = (data && data.clients !== undefined) ? data.clients : 0;
+          if (elements.clients) {
+            elements.clients.textContent = clients;
+            elements.clients.style.color = clients > 0 ? 'var(--green)' : 'var(--red)';
+          }
+        } catch (updateError) {
+          // Error silently handled
+        }
         
       } catch (error) {
-        console.warn('[STATE] Fetch failed:', error);
+        // Only log first error to prevent spam
+        if (!stateErrorLogged) {
+          let errorMsg = 'Unknown error';
+          if (error.name === 'AbortError') {
+            errorMsg = 'Request timeout';
+          } else if (error.name === 'SyntaxError') {
+            errorMsg = 'Invalid JSON response';
+          } else if (error.message) {
+            errorMsg = error.message;
+          }
+          stateErrorLogged = true;
+        }
+      } finally {
+        stateInProgress = false;
       }
     }
 
     // UI Updates
     function updateConnectionStatus(connected) {
+      if (!elements.connectionStatus || !elements.connectionCard) return;
+      
       if (connected) {
         elements.connectionStatus.textContent = '✅ Connected to ' + PICO_IP;
         elements.connectionCard.style.background = 'rgba(46,204,113,0.2)';
         elements.connectionCard.style.borderColor = 'var(--green)';
         elements.connectionCard.classList.add('pulse');
       } else {
-        elements.connectionStatus.textContent = consecutiveFailures < 3 
-          ? '⚠️ Connection interrupted...' 
-          : '❌ Cannot reach Pi Pico';
-        elements.connectionCard.style.background = 'rgba(239,107,107,0.2)';
-        elements.connectionCard.style.borderColor = 'var(--red)';
+        // Show different message based on failure count
+        if (consecutiveFailures < CONNECTION_FAIL_THRESHOLD) {
+          elements.connectionStatus.textContent = '🔄 Stabilizing connection...';
+          elements.connectionCard.style.background = 'rgba(243,156,18,0.2)';
+          elements.connectionCard.style.borderColor = 'var(--yellow)';
+        } else if (consecutiveFailures < 15) {
+          elements.connectionStatus.textContent = '⚠️ Connection interrupted...';
+          elements.connectionCard.style.background = 'rgba(243,156,18,0.2)';
+          elements.connectionCard.style.borderColor = 'var(--orange)';
+        } else {
+          elements.connectionStatus.textContent = '❌ Cannot reach Pi Pico';
+          elements.connectionCard.style.background = 'rgba(239,107,107,0.2)';
+          elements.connectionCard.style.borderColor = 'var(--red)';
+        }
         elements.connectionCard.classList.remove('pulse');
       }
     }
 
     function updateFingerDisplay(elementId, direction) {
       const el = elements[elementId];
+      if (!el) return; // Safety check
+      
       el.textContent = direction.toUpperCase();
       
       const colors = {
@@ -493,12 +772,21 @@
     }
 
     function setCarStatus(text, color) {
-      elements.carStatus.textContent = text;
-      elements.carStatus.style.color = color;
+      if (elements.carStatus) {
+        elements.carStatus.textContent = text;
+        elements.carStatus.style.color = color;
+      }
+    }
+
+    function setAttackStatus(text, color) {
+      if (elements.attackStatus) {
+        elements.attackStatus.textContent = text;
+        elements.attackStatus.style.color = color;
+      }
     }
 
     // Button Handlers
-    function setupButton(button, command, label, emoji, color) {
+    function setupButton(button, command, label, emoji, color, isAttack = false) {
       if (!button) return;
       
       button.addEventListener('click', async () => {
@@ -506,56 +794,118 @@
         button.classList.add('flash');
         setTimeout(() => button.classList.remove('flash'), 300);
         
-        // Update status
-        setCarStatus(emoji + ' ' + label, color);
+        // Update timestamp to prevent server from overwriting immediately
+        lastLocalUpdate = Date.now();
+        
+        // Update appropriate status with proper color formatting
+        const rgbColor = color.includes(',') ? `rgb(${color})` : color;
+        if (isAttack) {
+          setAttackStatus(emoji + ' ' + label, rgbColor);
+        } else {
+          setCarStatus(emoji + ' ' + label, rgbColor);
+        }
         
         // Log action
         logMovement(label, emoji, `rgba(${color}, 0.3)`);
         
         // Send command
-        await sendCommand(command);
+        const result = await sendCommand(command);
+        if (result) {
+          console.log('[BUTTON] Command sent:', command);
+        }
       });
     }
 
-    setupButton(elements.buttons.up, 'FORWARD', 'Forward', '⬆️', '52,152,219');
-    setupButton(elements.buttons.down, 'BACKWARD', 'Backward', '⬇️', '230,126,34');
-    setupButton(elements.buttons.left, 'LEFT', 'Left', '⬅️', '155,89,182');
-    setupButton(elements.buttons.right, 'RIGHT', 'Right', '➡️', '26,188,156');
-    setupButton(elements.buttons.brake, 'BRAKE', 'BRAKE', '🛑', '231,76,60');
-    setupButton(elements.buttons.attack1, 'ATTACK1', 'Attack 1', '⚔️', '243,156,18');
-    setupButton(elements.buttons.attack2, 'ATTACK2', 'Attack 2', '💥', '231,76,60');
+    setupButton(elements.buttons.up, 'forward', 'Forward', '⬆️', '52,152,219', false);
+    setupButton(elements.buttons.down, 'backward', 'Backward', '⬇️', '230,126,34', false);
+    setupButton(elements.buttons.left, 'left', 'Left', '⬅️', '155,89,182', false);
+    setupButton(elements.buttons.right, 'right', 'Right', '➡️', '26,188,156', false);
+    setupButton(elements.buttons.brake, 'brake', 'BRAKE', '🛑', '231,76,60', false);
+    setupButton(elements.buttons.attack1, 'attack1', 'Extendo', '⚔️', '243,156,18', true);
+    setupButton(elements.buttons.attack2, 'attack2', 'Pinch', '💥', '231,76,60', true);
+    setupButton(elements.buttons.attack3, 'attack3', 'Return', '⚡', '155,89,182', true);
+    setupButton(elements.buttons.danceStart, 'dance_start', 'Dancing', '🕺', '241,196,15', false);
+    setupButton(elements.buttons.danceStop, 'dance_stop', 'Dance Stopped', '🛑', '149,165,166', false);
 
     // Connection Management
+    let connectionAttempts = 0;
+    let initConnectionRunning = false;
+    const maxConnectionAttempts = 5;
+    
     async function initConnection() {
-      console.log('[CONNECTION] Initializing...');
-      elements.connectionStatus.textContent = '🔄 Connecting...';
+      if (reconnecting || initConnectionRunning) return; // Prevent concurrent attempts
+      
+      initConnectionRunning = true;
+      connectionAttempts++;
+      console.log(`[CONNECTION] Initializing... (attempt ${connectionAttempts}/${maxConnectionAttempts})`);      
+      if (elements.connectionStatus) {
+        elements.connectionStatus.textContent = '🔄 Connecting...';
+      }
       
       try {
-        const response = await fetch(API_BASE + '/sensors');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const response = await fetch(API_BASE + '/sensors', {
+          signal: controller.signal,
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Connection': 'keep-alive'
+          },
+          ...FETCH_CONFIG
+        });
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
           console.log('[CONNECTION] ✓ Connected to Pico');
           isConnected = true;
           consecutiveFailures = 0;
+          consecutiveSuccesses = CONNECTION_HEALTH_THRESHOLD; // Start healthy
+          connectionAttempts = 0;
+          sensorErrorLogged = false;
+          stateErrorLogged = false;
+          reconnecting = false;
+          initConnectionRunning = false;
           updateConnectionStatus(true);
           startPolling();
           return true;
         }
       } catch (error) {
-        console.warn('[CONNECTION] Failed:', error.message);
-        setTimeout(initConnection, 2000);
+        const errorMsg = error.name === 'AbortError' ? 'Timeout' : error.message;
+        
+        if (connectionAttempts < maxConnectionAttempts) {
+          const delay = Math.min(2000 * connectionAttempts, 10000); // Exponential backoff, max 10s
+          console.log(`[CONNECTION] Retrying in ${delay/1000}s...`);
+          initConnectionRunning = false;
+          setTimeout(initConnection, delay);
+        } else {
+          console.error('[CONNECTION] Max attempts reached. Please refresh page.');
+          if (elements.connectionStatus) {
+            elements.connectionStatus.textContent = '❌ Connection failed - Refresh page';
+          }
+          initConnectionRunning = false;
+        }
       }
       
       return false;
     }
 
+    let pollingSensorInterval = null;
+    let pollingStateInterval = null;
+    
     function startPolling() {
-      // Poll sensors every 200ms
-      setInterval(fetchSensors, 200);
+      // Clear any existing intervals
+      if (pollingSensorInterval) clearInterval(pollingSensorInterval);
+      if (pollingStateInterval) clearInterval(pollingStateInterval);
       
-      // Poll state every 1s
-      setInterval(fetchState, 1000);
+      // Poll sensors every 500ms (increased for better stability)
+      pollingSensorInterval = setInterval(fetchSensors, 500);
       
-      console.log('[POLLING] Started');
+      // Poll state every 3s (increased for better stability)
+      pollingStateInterval = setInterval(fetchState, 3000);
+      
+      console.log('[POLLING] Started with optimized intervals');
     }
 
     // Start
@@ -563,3 +913,5 @@
   </script>
 </body>
 </html>
+
+
