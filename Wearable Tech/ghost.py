@@ -281,12 +281,8 @@ def handle_car_command(car, command, speed=70):
         car.stop()
     else:
         print(f"Unknown command: {command}")
-
-#BELL470
-#911A9DEC7146
-#THIRDEARTH
-#Mr.LamYo       
-def setup_wifi_client(ssid="BELL470", password="911A9DEC7146"):
+     
+def setup_wifi_client(ssid="someWifi", password="somePassword"):
     """Connect to existing WiFi network to receive commands"""
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
@@ -461,7 +457,7 @@ if __name__ == "__main__":
     # CONFIGURATION: Set your controller Pico's IP address here
     # Run main.py first and look for the line: "[WIFI] IP Address: X.X.X.X"
     # Copy that IP address and paste it below
-    CONTROLLER_IP = '192.168.2.63'  # ⚠️ CHANGE THIS to your main.py controller's IP address!
+    CONTROLLER_IP = 'someIP(999.192.19.09)'  # ⚠️ CHANGE THIS to your main.py controller's IP address!
     
     print('\n' + '='*50)
     print('⚙️  GHOST CAR CONFIGURATION')
