@@ -1,0 +1,4 @@
+- The code for the main tech and its the "command centre"
+- Main is where all the functionalities are, the commands, and where everything starts
+- Controller.html is where the all the html content are with the js and css code in that file
+- imu and vector3d are just libraries to simplify the data using the MPU6050 and it is found online and the credits are in that code
