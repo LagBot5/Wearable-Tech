@@ -1,2 +1,3 @@
 - This is the code of the RC car with all the functions when getting commands from the wearable tech.
+- Uses the network and ip to connect the RC car
 - Used for second Pi Pico
